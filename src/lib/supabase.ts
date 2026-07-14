@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -10,4 +11,8 @@ if (!supabaseUrl || !supabasePublishableKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey)
+// Only the publishable (anon) key belongs here. The service role key must
+// never be referenced in frontend code.
+export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey)
+
+export const EMPLOYEE_PHOTOS_BUCKET = 'employee-photos'

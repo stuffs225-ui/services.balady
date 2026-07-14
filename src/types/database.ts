@@ -1,0 +1,75 @@
+export type Employee = {
+  id: string
+  public_token: string
+  employee_name: string
+  identity_number: string
+  gender: string
+  nationality: string
+  profession: string
+  authority_name: string
+  municipality_name: string
+  certificate_number: string
+  license_number: string | null
+  establishment_name: string
+  establishment_number: string | null
+  program_type: string | null
+  issue_date_hijri: string | null
+  issue_date_gregorian: string
+  expiry_date_hijri: string | null
+  expiry_date_gregorian: string
+  program_completion_date_hijri: string | null
+  employee_photo_path: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type EmployeeInsert = Omit<Employee, 'id' | 'created_at' | 'updated_at'>
+
+export type EmployeeUpdate = Partial<
+  Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at'>
+>
+
+export type CertificateStatus = 'active' | 'expiring' | 'expired' | 'revoked'
+
+export type PublicCertificate = {
+  employee_name: string
+  identity_number_masked: string
+  gender: string
+  nationality: string
+  profession: string
+  authority_name: string
+  municipality_name: string
+  certificate_number: string
+  license_number: string | null
+  establishment_name: string
+  establishment_number: string | null
+  program_type: string | null
+  issue_date_hijri: string | null
+  issue_date_gregorian: string
+  expiry_date_hijri: string | null
+  expiry_date_gregorian: string
+  program_completion_date_hijri: string | null
+  has_photo: boolean
+  status: CertificateStatus
+}
+
+export type Database = {
+  public: {
+    Tables: {
+      employees: {
+        Row: Employee
+        Insert: EmployeeInsert
+        Update: EmployeeUpdate
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: {
+      verify_certificate: {
+        Args: { p_token: string }
+        Returns: PublicCertificate[]
+      }
+    }
+  }
+}

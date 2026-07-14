@@ -107,6 +107,7 @@ export type SiteSettings = {
   logo_size: number
   footer_badge_size: number
   employee_card_template_path: string | null
+  employee_card_back_template_path: string | null
   employee_card_layout: Partial<EmployeeCardLayout> | null
   updated_at: string
 }
@@ -122,9 +123,12 @@ export type SiteSettingsUpdate = Partial<
     | 'footer_support_text'
     | 'trust_banner_text'
     | 'accessibility_link_href'
+    | 'header_title_text'
+    | 'header_subtitle_text'
     | 'logo_size'
     | 'footer_badge_size'
     | 'employee_card_template_path'
+    | 'employee_card_back_template_path'
     | 'employee_card_layout'
   >
 >

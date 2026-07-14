@@ -2,13 +2,12 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/useAuth'
 import Logo from '../../components/brand/Logo'
-import { siteIdentity } from '../../config/siteLinks'
 import { useSiteSettings } from '../settings/useSiteSettings'
 
 function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const { logoUrl } = useSiteSettings()
+  const { logoUrl, headerTitleText, headerSubtitleText } = useSiteSettings()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -36,15 +35,13 @@ function LoginPage() {
       <div className="w-full max-w-sm rounded-md border border-divider bg-surface p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-14 w-14 object-contain" />
+            <img src={logoUrl} alt={headerTitleText} className="h-14 w-14 object-contain" />
           ) : (
             <Logo />
           )}
           <div>
-            <h1 className="text-lg font-bold text-heading">{siteIdentity.nameAr}</h1>
-            <p className="mt-1 text-sm font-medium text-brand-primary">
-              ({siteIdentity.demoLabel})
-            </p>
+            <h1 className="text-lg font-bold text-heading">{headerTitleText}</h1>
+            <p className="mt-1 text-sm font-medium text-brand-primary">{headerSubtitleText}</p>
           </div>
         </div>
 

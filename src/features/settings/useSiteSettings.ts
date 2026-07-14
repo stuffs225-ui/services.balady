@@ -25,9 +25,12 @@ export type ResolvedSiteBranding = {
   footerSupportText: string
   trustBannerText: string
   accessibilityLinkHref: string | null
+  headerTitleText: string
+  headerSubtitleText: string
   logoSize: number
   footerBadgeSize: number
   employeeCardTemplateUrl: string | null
+  employeeCardBackTemplateUrl: string | null
   employeeCardLayout: EmployeeCardLayout
   isLoading: boolean
 }
@@ -47,9 +50,12 @@ export function useSiteSettings(): ResolvedSiteBranding {
     footerSupportText: defaultFooterSupportText,
     trustBannerText: siteIdentity.demoDisclaimer,
     accessibilityLinkHref: null,
+    headerTitleText: siteIdentity.nameAr,
+    headerSubtitleText: `(${siteIdentity.demoLabel})`,
     logoSize: 96,
     footerBadgeSize: 56,
     employeeCardTemplateUrl: null,
+    employeeCardBackTemplateUrl: null,
     employeeCardLayout: mergeEmployeeCardLayout(null),
     isLoading: true,
   })
@@ -75,10 +81,15 @@ export function useSiteSettings(): ResolvedSiteBranding {
           footerSupportText: settings?.footer_support_text || defaultFooterSupportText,
           trustBannerText: settings?.trust_banner_text || siteIdentity.demoDisclaimer,
           accessibilityLinkHref: settings?.accessibility_link_href ?? null,
+          headerTitleText: settings?.header_title_text || siteIdentity.nameAr,
+          headerSubtitleText: settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`,
           logoSize: settings?.logo_size || 96,
           footerBadgeSize: settings?.footer_badge_size || 56,
           employeeCardTemplateUrl: getEmployeeCardTemplateUrl(
             settings?.employee_card_template_path ?? null,
+          ),
+          employeeCardBackTemplateUrl: getEmployeeCardTemplateUrl(
+            settings?.employee_card_back_template_path ?? null,
           ),
           employeeCardLayout: mergeEmployeeCardLayout(settings?.employee_card_layout),
           isLoading: false,

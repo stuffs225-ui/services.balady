@@ -17,19 +17,17 @@ function PublicHeader() {
   }, [])
 
   return (
-    <header className="bg-surface print:hidden">
-      <div className="flex items-center justify-between px-6 py-6 sm:px-7">
-        <div className="flex items-center gap-3">
+    <header className="min-h-[78px] bg-surface print:hidden">
+      <div className="flex min-h-[78px] items-center justify-between px-[18px] py-[12px]">
+        <div className="flex items-center gap-2">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-10 w-10 object-contain" />
+            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-8 w-8 object-contain" />
           ) : (
-            <Logo />
+            <Logo className="h-8 w-8" />
           )}
           <div className="text-right">
-            <p className="text-sm font-bold text-heading sm:text-base">{siteIdentity.nameAr}</p>
-            <p className="text-xs font-medium text-brand-primary sm:text-sm">
-              ({siteIdentity.demoLabel})
-            </p>
+            <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
+            <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
           </div>
         </div>
 
@@ -39,7 +37,7 @@ function PublicHeader() {
           aria-controls="public-mobile-navigation"
           aria-label="فتح قائمة التنقل"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex h-10 w-10 items-center justify-center text-text-primary"
+          className="flex h-9 w-9 items-center justify-center text-text-primary"
         >
           {isOpen ? <CloseIcon /> : <MenuIcon />}
         </button>

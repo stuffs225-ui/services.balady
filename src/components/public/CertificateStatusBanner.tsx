@@ -23,9 +23,9 @@ function CertificateStatusBanner({ status }: { status: CertificateStatus }) {
   const message = STATUS_MESSAGES[status]
 
   return (
-    <div className="mx-auto mt-6 flex w-fit flex-col items-center gap-1 sm:mt-7">
+    <div className="mx-auto mt-4 flex w-fit flex-col items-center gap-1">
       <span
-        className={`rounded-full px-4 py-1.5 text-sm font-bold ${STATUS_STYLES[status]}`}
+        className={`rounded-full px-4 py-1.5 text-[13px] font-bold sm:text-sm ${STATUS_STYLES[status]}`}
       >
         {STATUS_LABELS[status]}
       </span>

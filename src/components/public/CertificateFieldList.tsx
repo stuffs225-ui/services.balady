@@ -17,7 +17,7 @@ function CertificateFieldList({
   const highlightGregorian = datePreference === 'gregorian'
 
   return (
-    <div className="w-[min(calc(100%-56px),720px)] max-[374px]:w-[calc(100%-40px)] mx-auto md:w-[min(calc(100%-96px),720px)]">
+    <div className="mx-auto w-[calc(100%-56px)] max-w-[350px] max-[374px]:w-[calc(100%-40px)] md:max-w-[720px] md:w-[min(calc(100%-96px),720px)]">
       <ReadOnlyField label="الأمانة" value={certificate.authority_name} largeText={largeText} />
       <ReadOnlyField label="البلدية" value={certificate.municipality_name} largeText={largeText} />
       <ReadOnlyField label="الاسم" value={certificate.employee_name} largeText={largeText} />

@@ -184,11 +184,26 @@ describe('PublicEmployeePage', () => {
     })
 
     renderAtToken('valid-token')
+    await screen.findByText('أحمد محمد التجريبي')
 
-    const printButton = await screen.findByRole('button', { name: 'طباعة' })
+    // Print lives inside the settings menu, not as a standalone button in
+    // the main content flow.
+    await userEvent.click(screen.getByRole('button', { name: 'الإعدادات' }))
+    const printButton = await screen.findByRole('button', { name: 'الطباعة' })
     await userEvent.click(printButton)
     expect(printSpy).toHaveBeenCalledOnce()
 
     vi.unstubAllGlobals()
+  })
+
+  it('lets the footer follow content instead of pinning it with a large blank gap', async () => {
+    mockFetch.mockResolvedValue({ kind: 'not-found' })
+    const { container } = renderAtToken('does-not-exist')
+    await screen.findByText('تعذر التحقق من الشهادة')
+
+    const main = container.querySelector('.public-main')!
+    const content = container.querySelector('.public-content')!
+    expect(main.className).not.toContain('flex-1')
+    expect(content.className).not.toMatch(/pb-\[clamp/)
   })
 })

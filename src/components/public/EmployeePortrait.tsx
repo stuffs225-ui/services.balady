@@ -5,19 +5,15 @@ type EmployeePortraitProps = {
 
 function EmployeePortrait({ photoUrl, employeeName }: EmployeePortraitProps) {
   return (
-    <div className="mt-6 mb-10 flex justify-center sm:mt-8 sm:mb-12">
+    <div className="mx-auto mt-[30px] mb-[28px] flex w-[184px] justify-center">
       {photoUrl ? (
         <img
           src={photoUrl}
           alt={employeeName}
-          className="aspect-square object-cover"
-          style={{ width: 'clamp(180px, 52vw, 210px)' }}
+          className="h-[184px] w-[184px] object-cover"
         />
       ) : (
-        <div
-          className="flex aspect-square items-center justify-center bg-surface-muted text-sm text-text-secondary"
-          style={{ width: 'clamp(180px, 52vw, 210px)' }}
-        >
+        <div className="flex h-[184px] w-[184px] items-center justify-center bg-surface-muted text-[15px] text-text-secondary">
           لا توجد صورة
         </div>
       )}

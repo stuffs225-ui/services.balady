@@ -1,3 +1,5 @@
+const LONG_LABEL_THRESHOLD = 26
+
 type ReadOnlyFieldProps = {
   label: string
   value: string | null | undefined
@@ -15,29 +17,29 @@ function ReadOnlyField({
   highlighted = false,
   largeText = false,
 }: ReadOnlyFieldProps) {
+  const isLongLabel = label.length > LONG_LABEL_THRESHOLD
+
   return (
-    <div className="mb-[30px]">
+    <div className="employee-field mb-[21px]">
       <span
-        className={`mb-[11px] block text-right font-bold text-text-primary ${
-          largeText ? 'text-[20px] sm:text-2xl' : 'text-[18px] sm:text-xl'
+        className={`mb-[8px] block text-right font-bold leading-[1.45] text-text-primary ${
+          largeText ? 'text-[19px]' : isLongLabel ? 'text-[15px]' : 'text-[16px]'
         }`}
       >
         {label}
       </span>
       <div
         dir={dir}
-        className={`flex min-h-[66px] items-center rounded-field border-[1.5px] px-[18px] py-[13px] leading-[1.45] ${
-          largeText ? 'text-[22px]' : 'text-[20px]'
+        className={`flex min-h-[44px] items-center rounded-field border px-[14px] py-[8px] leading-[1.5] ${
+          largeText ? 'text-[19px]' : 'text-[17px]'
         } ${
           highlighted
             ? 'border-brand-primary bg-brand-primary-soft/10 text-text-primary'
-            : 'border-input-border bg-input-bg text-text-secondary'
-        } ${dir === 'rtl' ? 'justify-end text-right' : 'justify-start text-left'} ${
-          monospace ? 'font-mono' : ''
-        }`}
+            : 'border-field-border bg-field-bg text-field-value'
+        } justify-end text-right ${monospace ? 'font-mono' : ''}`}
         style={{ unicodeBidi: 'plaintext' }}
       >
-        {value || '—'}
+        {value || '–'}
       </div>
     </div>
   )

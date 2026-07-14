@@ -51,6 +51,18 @@ function AccessibilityToolbar({
                 </button>
               </li>
             ))}
+            <li className="border-t border-divider">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false)
+                  window.print()
+                }}
+                className="flex w-full items-center justify-between px-4 py-2 text-right hover:bg-surface-muted"
+              >
+                الطباعة
+              </button>
+            </li>
           </ul>
         )}
       </div>

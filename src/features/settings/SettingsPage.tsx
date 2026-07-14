@@ -237,7 +237,7 @@ function SettingsPage() {
             <img
               src={logoPreview}
               alt="الشعار الحالي"
-              style={{ width: logoSize, height: logoSize }}
+              style={{ height: logoSize, width: 'auto' }}
               className="object-contain"
             />
           ) : (

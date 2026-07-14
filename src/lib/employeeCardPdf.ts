@@ -96,6 +96,13 @@ async function renderCardFaceToDataUrl(
     await new Promise((resolve) => setTimeout(resolve, 400))
     await waitForImages(container)
 
+    // html-to-image embeds images by fetching them itself while building the
+    // SVG snapshot; remote images (the template from Supabase storage, the
+    // employee photo) can silently fail to embed there even though they
+    // load fine as normal <img> elements. Sidestep that entirely by
+    // replacing every remote image with an inlined data: URI first.
+    await inlineRemoteImages(container)
+
     return await toPng(container, {
       width: TEMPLATE_NATURAL_WIDTH,
       height: TEMPLATE_NATURAL_HEIGHT,
@@ -122,15 +129,50 @@ async function waitForImages(container: HTMLElement, timeoutMs = 4000): Promise<
   }
 }
 
+/** Fetches a URL and returns its contents as a data: URI. */
+async function fetchAsDataUrl(url: string): Promise<string> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`تعذر تحميل الصورة (${response.status})`)
+  const blob = await response.blob()
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** Replaces every non-data-URI <img> in the container with an inlined data: URI, in place. */
+async function inlineRemoteImages(container: HTMLElement): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll('img'))
+
+  await Promise.all(
+    imgs.map(async (img) => {
+      if (img.src.startsWith('data:')) return
+      try {
+        const dataUrl = await fetchAsDataUrl(img.src)
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+          img.src = dataUrl
+        })
+      } catch {
+        // Leave the original remote src — the export will still proceed,
+        // just without that one image, rather than failing entirely.
+      }
+    }),
+  )
+}
+
 /** Loads a static image URL and draws it edge-to-edge (cover-fit) onto a fixed-size canvas. */
 async function imageUrlToCoverCanvasDataUrl(url: string): Promise<string> {
+  const dataUrl = await fetchAsDataUrl(url)
   const image = new Image()
-  image.crossOrigin = 'anonymous'
 
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve()
     image.onerror = () => reject(new Error('تعذر تحميل صورة قالب الصفحة الثانية'))
-    image.src = url
+    image.src = dataUrl
   })
 
   const canvas = document.createElement('canvas')

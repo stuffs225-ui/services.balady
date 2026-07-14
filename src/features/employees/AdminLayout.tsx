@@ -13,7 +13,11 @@ function AdminLayout() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/employees" className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={headerTitleText} className="h-10 w-10 object-contain" />
+              <img
+                src={logoUrl}
+                alt={headerTitleText}
+                className="h-10 w-auto max-w-24 object-contain"
+              />
             ) : (
               <Logo />
             )}

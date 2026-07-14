@@ -11,10 +11,14 @@ import {
 
 const mockGetSiteSettings = vi.fn()
 const mockGetBrandingAssetUrl = vi.fn((path: string | null) => (path ? `https://cdn.test/${path}` : null))
+const mockGetEmployeeCardTemplateUrl = vi.fn((path: string | null) =>
+  path ? `https://cdn.test/${path}` : null,
+)
 
 vi.mock('./api', () => ({
   getSiteSettings: () => mockGetSiteSettings(),
   getBrandingAssetUrl: (path: string | null) => mockGetBrandingAssetUrl(path),
+  getEmployeeCardTemplateUrl: (path: string | null) => mockGetEmployeeCardTemplateUrl(path),
 }))
 
 describe('useSiteSettings', () => {
@@ -36,8 +40,8 @@ describe('useSiteSettings', () => {
     expect(result.current.footerSupportText).toBe(defaultFooterSupportText)
     expect(result.current.trustBannerText).toBe(siteIdentity.demoDisclaimer)
     expect(result.current.accessibilityLinkHref).toBeNull()
-    expect(result.current.headerTitleText).toBe(siteIdentity.nameAr)
-    expect(result.current.headerSubtitleText).toBe(`(${siteIdentity.demoLabel})`)
+    expect(result.current.logoSize).toBe(96)
+    expect(result.current.footerBadgeSize).toBe(56)
   })
 
   it('falls back to static defaults when the query fails', async () => {
@@ -60,8 +64,8 @@ describe('useSiteSettings', () => {
       footer_support_text: 'دعم مخصص',
       trust_banner_text: 'جملة مخصصة أعلى الصفحة',
       accessibility_link_href: 'https://example.test/accessibility',
-      header_title_text: 'اسم نظام مخصص',
-      header_subtitle_text: '(نص فرعي مخصص)',
+      logo_size: 120,
+      footer_badge_size: 72,
       updated_at: '2026-01-01T00:00:00Z',
     })
 
@@ -78,7 +82,7 @@ describe('useSiteSettings', () => {
     expect(result.current.footerSupportText).toBe('دعم مخصص')
     expect(result.current.trustBannerText).toBe('جملة مخصصة أعلى الصفحة')
     expect(result.current.accessibilityLinkHref).toBe('https://example.test/accessibility')
-    expect(result.current.headerTitleText).toBe('اسم نظام مخصص')
-    expect(result.current.headerSubtitleText).toBe('(نص فرعي مخصص)')
+    expect(result.current.logoSize).toBe(120)
+    expect(result.current.footerBadgeSize).toBe(72)
   })
 })

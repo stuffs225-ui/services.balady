@@ -45,13 +45,30 @@ function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigati
         </a>
       </div>
 
-      <a
-        href={searchLink.href}
-        className="flex min-h-[64px] items-center justify-end border-t border-divider px-7 text-lg font-medium text-text-primary sm:text-xl"
+      <form
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+        className="flex min-h-[64px] items-center gap-3 border-t border-divider px-7"
       >
-        {searchLink.label}
-      </a>
+        <SearchIcon />
+        <input
+          type="search"
+          name="q"
+          placeholder={searchLink.label}
+          aria-label={searchLink.label}
+          className="min-w-0 flex-1 bg-transparent text-lg font-medium text-text-primary outline-none placeholder:text-text-secondary sm:text-xl"
+        />
+      </form>
     </nav>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 text-text-secondary">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 

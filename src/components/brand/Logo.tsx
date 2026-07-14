@@ -1,21 +1,23 @@
 type LogoProps = {
   className?: string
   variant?: 'default' | 'inverted'
+  /** Overrides the default 40x40 size (in pixels). */
+  size?: number
 }
 
 /**
  * Independent demo mark: a rounded shield with a checkmark.
  * Intentionally generic — not a reproduction of any government seal.
  */
-function Logo({ className, variant = 'default' }: LogoProps) {
+function Logo({ className, variant = 'default', size }: LogoProps) {
   const fill = variant === 'inverted' ? '#ffffff' : '#1f885b'
   const mark = variant === 'inverted' ? '#1f885b' : '#ffffff'
 
   return (
     <svg
       viewBox="0 0 40 40"
-      width="40"
-      height="40"
+      width={size ?? 40}
+      height={size ?? 40}
       className={className}
       role="img"
       aria-label="شعار النظام التجريبي"

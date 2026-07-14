@@ -1,7 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from './SettingsPage'
+
+function renderSettingsPage() {
+  return render(
+    <MemoryRouter>
+      <SettingsPage />
+    </MemoryRouter>,
+  )
+}
 
 const mockGetSiteSettings = vi.fn()
 const mockUpdateSiteSettings = vi.fn()
@@ -30,13 +39,13 @@ describe('SettingsPage', () => {
   })
 
   it('loads and displays existing nav links', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     expect(await screen.findByDisplayValue('عن النظام')).toBeInTheDocument()
     expect(screen.getByDisplayValue('/about')).toBeInTheDocument()
   })
 
   it('adds a new empty nav link row', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     await screen.findByDisplayValue('عن النظام')
 
     const before = screen.getAllByPlaceholderText('النص').length
@@ -46,7 +55,7 @@ describe('SettingsPage', () => {
   })
 
   it('saves edited links and filters out empty rows', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     await screen.findByDisplayValue('عن النظام')
 
     await userEvent.click(screen.getAllByRole('button', { name: 'إضافة رابط' })[0])
@@ -59,7 +68,7 @@ describe('SettingsPage', () => {
   })
 
   it('shows a success message after saving', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     await screen.findByDisplayValue('عن النظام')
 
     await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
@@ -69,7 +78,7 @@ describe('SettingsPage', () => {
 
   it('shows an error message when saving fails', async () => {
     mockUpdateSiteSettings.mockRejectedValue(new Error('boom'))
-    render(<SettingsPage />)
+    renderSettingsPage()
     await screen.findByDisplayValue('عن النظام')
 
     await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
@@ -87,7 +96,7 @@ describe('SettingsPage', () => {
       updated_at: '2026-01-01T00:00:00Z',
     })
 
-    render(<SettingsPage />)
+    renderSettingsPage()
 
     // The exact items currently shown in the mobile menu must be editable,
     // not a blank form the admin has to rebuild from scratch.
@@ -108,7 +117,7 @@ describe('SettingsPage', () => {
       updated_at: '2026-01-01T00:00:00Z',
     })
 
-    render(<SettingsPage />)
+    renderSettingsPage()
     const servicesHrefInput = await screen.findByDisplayValue('/services')
 
     await userEvent.clear(servicesHrefInput)
@@ -123,13 +132,13 @@ describe('SettingsPage', () => {
   })
 
   it('seeds footer copyright/support text with the current defaults', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     expect(await screen.findByDisplayValue('جميع الحقوق محفوظة للجهة التجريبية © {year}')).toBeInTheDocument()
     expect(screen.getByDisplayValue('تم تطوير وتشغيل النسخة التجريبية لأغراض العرض')).toBeInTheDocument()
   })
 
   it('saves edited footer copyright/support text', async () => {
-    render(<SettingsPage />)
+    renderSettingsPage()
     const copyrightInput = await screen.findByDisplayValue(
       'جميع الحقوق محفوظة للجهة التجريبية © {year}',
     )

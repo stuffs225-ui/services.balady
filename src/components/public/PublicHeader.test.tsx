@@ -6,8 +6,7 @@ vi.mock('../../features/settings/useSiteSettings', () => ({
   useSiteSettings: () => ({
     logoUrl: null,
     navLinks: [],
-    headerTitleText: 'نظام الشهادات الصحية',
-    headerSubtitleText: '(نسخة تجريبية)',
+    logoSize: 96,
   }),
 }))
 
@@ -18,11 +17,11 @@ describe('PublicHeader', () => {
     const children = Array.from(row.children)
 
     const menuButtonIndex = children.findIndex((el) => el.tagName === 'BUTTON')
-    const logoBlockIndex = children.findIndex(
-      (el) => el.tagName === 'DIV' && el.querySelector('svg, img'),
+    const logoIndex = children.findIndex(
+      (el) => el.tagName.toLowerCase() === 'svg' || el.tagName === 'IMG',
     )
 
-    expect(menuButtonIndex).toBeLessThan(logoBlockIndex)
+    expect(menuButtonIndex).toBeLessThan(logoIndex)
   })
 
   it('still exposes the accessible menu toggle button', () => {
@@ -30,9 +29,16 @@ describe('PublicHeader', () => {
     expect(screen.getByRole('button', { name: 'فتح قائمة التنقل' })).toBeInTheDocument()
   })
 
-  it('renders the admin-configurable header title and subtitle', () => {
+  it('renders the logo at the admin-configured size', () => {
+    const { container } = render(<PublicHeader />)
+    const logo = container.querySelector('svg[aria-label="شعار النظام التجريبي"]')
+    expect(logo).toHaveAttribute('width', '96')
+    expect(logo).toHaveAttribute('height', '96')
+  })
+
+  it('no longer renders any header title/subtitle text', () => {
     render(<PublicHeader />)
-    expect(screen.getByText('نظام الشهادات الصحية')).toBeInTheDocument()
-    expect(screen.getByText('(نسخة تجريبية)')).toBeInTheDocument()
+    expect(screen.queryByText('نظام الشهادات الصحية')).not.toBeInTheDocument()
+    expect(screen.queryByText('(نسخة تجريبية)')).not.toBeInTheDocument()
   })
 })

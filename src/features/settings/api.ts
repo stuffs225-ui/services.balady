@@ -1,4 +1,9 @@
-import { supabase, BRANDING_ASSETS_BUCKET, SITE_SETTINGS_ID } from '../../lib/supabase'
+import {
+  supabase,
+  BRANDING_ASSETS_BUCKET,
+  EMPLOYEE_CARD_TEMPLATE_BUCKET,
+  SITE_SETTINGS_ID,
+} from '../../lib/supabase'
 import type { SiteSettings, SiteSettingsUpdate } from '../../types/database'
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
@@ -36,5 +41,22 @@ export async function uploadBrandingAsset(file: File, folder: 'logo' | 'badges')
 export function getBrandingAssetUrl(path: string | null): string | null {
   if (!path) return null
   const { data } = supabase.storage.from(BRANDING_ASSETS_BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+/** Uploads a blank employee card background template and returns its storage path. */
+export async function uploadEmployeeCardTemplate(file: File): Promise<string> {
+  const path = `template/${crypto.randomUUID()}-${file.name}`
+  const { error } = await supabase.storage
+    .from(EMPLOYEE_CARD_TEMPLATE_BUCKET)
+    .upload(path, file, { contentType: file.type })
+  if (error) throw error
+  return path
+}
+
+/** The template bucket is public, so this is a plain public URL (no signing). */
+export function getEmployeeCardTemplateUrl(path: string | null): string | null {
+  if (!path) return null
+  const { data } = supabase.storage.from(EMPLOYEE_CARD_TEMPLATE_BUCKET).getPublicUrl(path)
   return data.publicUrl
 }

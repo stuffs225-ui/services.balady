@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getSiteSettings, getBrandingAssetUrl } from './api'
-import { navLinks as defaultNavLinks, footerLinks as defaultFooterLinks } from '../../config/siteLinks'
+import {
+  navLinks as defaultNavLinks,
+  footerLinks as defaultFooterLinks,
+  defaultFooterCopyrightText,
+  defaultFooterSupportText,
+} from '../../config/siteLinks'
 import type { NavLinkSetting } from '../../types/database'
 
 export type ResolvedFooterBadge = {
@@ -14,6 +19,8 @@ export type ResolvedSiteBranding = {
   navLinks: NavLinkSetting[]
   footerLinks: NavLinkSetting[]
   footerBadges: ResolvedFooterBadge[]
+  footerCopyrightText: string
+  footerSupportText: string
   isLoading: boolean
 }
 
@@ -28,6 +35,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
     navLinks: defaultNavLinks,
     footerLinks: defaultFooterLinks,
     footerBadges: [],
+    footerCopyrightText: defaultFooterCopyrightText,
+    footerSupportText: defaultFooterSupportText,
     isLoading: true,
   })
 
@@ -48,6 +57,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
             alt: badge.alt,
             href: badge.href,
           })),
+          footerCopyrightText: settings?.footer_copyright_text || defaultFooterCopyrightText,
+          footerSupportText: settings?.footer_support_text || defaultFooterSupportText,
           isLoading: false,
         })
       } catch {

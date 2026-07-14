@@ -34,7 +34,7 @@ function PublicHeader() {
           <img
             src={logoUrl}
             alt={siteIdentity.nameAr}
-            style={{ width: logoSize, height: logoSize }}
+            style={{ height: logoSize, width: 'auto' }}
             className="object-contain"
           />
         ) : (

@@ -54,8 +54,10 @@ function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigati
         <input
           type="search"
           name="q"
+          dir="rtl"
           placeholder={searchLink.label}
           aria-label={searchLink.label}
+          style={{ textAlign: 'right' }}
           className="min-w-0 flex-1 bg-transparent text-lg font-medium text-text-primary outline-none placeholder:text-text-secondary sm:text-xl"
         />
       </form>

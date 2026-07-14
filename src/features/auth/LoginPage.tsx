@@ -35,7 +35,11 @@ function LoginPage() {
       <div className="w-full max-w-sm rounded-md border border-divider bg-surface p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={headerTitleText} className="h-14 w-14 object-contain" />
+            <img
+              src={logoUrl}
+              alt={headerTitleText}
+              className="h-14 w-auto max-w-32 object-contain"
+            />
           ) : (
             <Logo />
           )}

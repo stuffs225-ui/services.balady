@@ -1,12 +1,11 @@
 import { Link, Outlet } from 'react-router-dom'
 import Logo from '../../components/brand/Logo'
-import { siteIdentity } from '../../config/siteLinks'
 import { useAuth } from '../../lib/useAuth'
 import { useSiteSettings } from '../settings/useSiteSettings'
 
 function AdminLayout() {
   const { signOut } = useAuth()
-  const { logoUrl } = useSiteSettings()
+  const { logoUrl, headerTitleText, headerSubtitleText } = useSiteSettings()
 
   return (
     <div className="flex min-h-svh flex-col bg-surface-muted">
@@ -14,15 +13,13 @@ function AdminLayout() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/employees" className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={siteIdentity.nameAr} className="h-10 w-10 object-contain" />
+              <img src={logoUrl} alt={headerTitleText} className="h-10 w-10 object-contain" />
             ) : (
               <Logo />
             )}
             <div>
-              <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
-              <p className="text-xs font-medium text-brand-primary">
-                ({siteIdentity.demoLabel})
-              </p>
+              <p className="text-sm font-bold text-heading">{headerTitleText}</p>
+              <p className="text-xs font-medium text-brand-primary">{headerSubtitleText}</p>
             </div>
           </Link>
 

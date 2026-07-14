@@ -3,9 +3,9 @@ import { getEmployeePhotoUrl } from '../../features/employees/api'
 import { generateQrDataUrl } from '../../lib/qrcode'
 import {
   TEMPLATE_NATURAL_WIDTH,
+  TEMPLATE_NATURAL_HEIGHT,
   defaultEmployeeCardLayout,
   EMPLOYEE_CARD_NUMERIC_FIELDS,
-  EMPLOYEE_CARD_DISCLAIMER_TEXT,
 } from '../../config/employeeCardLayout'
 import type { Employee, EmployeeCardLayout, EmployeeCardTextBox } from '../../types/database'
 
@@ -51,6 +51,8 @@ type EmployeeCardRendererProps = {
   selectedField?: FieldKey | null
   onSelectField?: (field: FieldKey) => void
   onLayoutChange?: (layout: EmployeeCardLayout) => void
+  /** Used for PDF export: forces the exact 1004x638 canvas, background filled edge-to-edge. */
+  exportMode?: boolean
 }
 
 /**
@@ -68,6 +70,7 @@ function EmployeeCardRenderer({
   selectedField = null,
   onSelectField,
   onLayoutChange,
+  exportMode = false,
 }: EmployeeCardRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [renderedWidth, setRenderedWidth] = useState(TEMPLATE_NATURAL_WIDTH)
@@ -165,8 +168,24 @@ function EmployeeCardRenderer({
   const mediaFields: MediaFieldKey[] = ['photo', 'qr']
 
   return (
-    <div ref={containerRef} className="relative w-full select-none">
-      <img src={templateUrl} alt="" className="block h-auto w-full" draggable={false} />
+    <div
+      ref={containerRef}
+      className="relative select-none"
+      style={
+        exportMode
+          ? { width: TEMPLATE_NATURAL_WIDTH, height: TEMPLATE_NATURAL_HEIGHT }
+          : { width: '100%' }
+      }
+    >
+      <img
+        src={templateUrl}
+        alt=""
+        crossOrigin="anonymous"
+        className={
+          exportMode ? 'block h-full w-full object-cover' : 'block h-auto w-full'
+        }
+        draggable={false}
+      />
 
       {mediaFields.map((field) => (
         <MediaOverlayBox
@@ -183,6 +202,7 @@ function EmployeeCardRenderer({
               <img
                 src={photoUrl}
                 alt={employee.employee_name}
+                crossOrigin="anonymous"
                 className="h-full w-full object-cover object-center"
                 draggable={false}
               />
@@ -220,13 +240,6 @@ function EmployeeCardRenderer({
           />
         )
       })}
-
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center bg-black/55 text-white"
-        style={{ fontFamily: FONT_STACK, fontSize: scaledFontSize(13), padding: '2px 0' }}
-      >
-        {EMPLOYEE_CARD_DISCLAIMER_TEXT}
-      </div>
     </div>
   )
 }

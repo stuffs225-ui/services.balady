@@ -52,6 +52,9 @@ function EmployeeCardTemplatePage() {
   const [templateUrl, setTemplateUrl] = useState<string | null>(null)
   const [layout, setLayout] = useState<EmployeeCardLayout>(defaultEmployeeCardLayout)
 
+  const [backTemplatePath, setBackTemplatePath] = useState<string | null>(null)
+  const [backTemplateUrl, setBackTemplateUrl] = useState<string | null>(null)
+
   const [calibrationMode, setCalibrationMode] = useState(false)
   const [selectedField, setSelectedField] = useState<keyof EmployeeCardLayout | null>(null)
 
@@ -64,6 +67,10 @@ function EmployeeCardTemplatePage() {
       setTemplatePath(settings?.employee_card_template_path ?? null)
       setTemplateUrl(getEmployeeCardTemplateUrl(settings?.employee_card_template_path ?? null))
       setLayout(mergeEmployeeCardLayout(settings?.employee_card_layout))
+      setBackTemplatePath(settings?.employee_card_back_template_path ?? null)
+      setBackTemplateUrl(
+        getEmployeeCardTemplateUrl(settings?.employee_card_back_template_path ?? null),
+      )
       setIsLoading(false)
     }
 
@@ -103,6 +110,40 @@ function EmployeeCardTemplatePage() {
       setMessage({ kind: 'success', text: 'تمت إزالة قالب البطاقة' })
     } catch {
       setMessage({ kind: 'error', text: 'تعذر إزالة قالب البطاقة' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleBackUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setMessage(null)
+    setIsSaving(true)
+    try {
+      const path = await uploadEmployeeCardTemplate(file, 'back')
+      await updateSiteSettings({ employee_card_back_template_path: path })
+      setBackTemplatePath(path)
+      setBackTemplateUrl(getEmployeeCardTemplateUrl(path))
+      setMessage({ kind: 'success', text: 'تم رفع قالب الصفحة الثانية بنجاح' })
+    } catch {
+      setMessage({ kind: 'error', text: 'تعذر رفع قالب الصفحة الثانية، يرجى المحاولة مرة أخرى' })
+    } finally {
+      setIsSaving(false)
+      event.target.value = ''
+    }
+  }
+
+  async function handleBackRemove() {
+    setMessage(null)
+    setIsSaving(true)
+    try {
+      await updateSiteSettings({ employee_card_back_template_path: null })
+      setBackTemplatePath(null)
+      setBackTemplateUrl(null)
+      setMessage({ kind: 'success', text: 'تمت إزالة قالب الصفحة الثانية' })
+    } catch {
+      setMessage({ kind: 'error', text: 'تعذر إزالة قالب الصفحة الثانية' })
     } finally {
       setIsSaving(false)
     }
@@ -304,10 +345,43 @@ function EmployeeCardTemplatePage() {
           </div>
         </section>
       ) : (
-        <p className="text-sm text-text-secondary">
+        <p className="mb-8 text-sm text-text-secondary">
           لم يتم رفع قالب بطاقة بعد. ارفع صورة الخلفية أعلاه لبدء المعاينة والمعايرة.
         </p>
       )}
+
+      <section className="mb-8 border-t border-divider pt-8">
+        <h2 className="mb-2 font-bold text-heading">قالب الصفحة الثانية (التعليمات)</h2>
+        <p className="mb-4 text-sm text-text-secondary">
+          صفحة ثابتة تُطبع/تُصدَّر كما هي دون أي بيانات ديناميكية أو معايرة — فقط الصورة التي
+          ترفعها هنا.
+        </p>
+        <div className="mb-4 flex flex-wrap items-center gap-4">
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            onChange={handleBackUpload}
+            disabled={isSaving}
+          />
+          {backTemplatePath && (
+            <button
+              type="button"
+              onClick={handleBackRemove}
+              disabled={isSaving}
+              className="rounded-button border border-expired px-3 py-2 text-sm text-expired hover:bg-red-50"
+            >
+              إزالة القالب
+            </button>
+          )}
+        </div>
+        {backTemplateUrl && (
+          <img
+            src={backTemplateUrl}
+            alt="معاينة قالب الصفحة الثانية"
+            className="max-w-xl rounded-field border border-divider"
+          />
+        )}
+      </section>
     </div>
   )
 }

@@ -5,6 +5,14 @@ export const TEMPLATE_NATURAL_WIDTH = 1004
 export const TEMPLATE_NATURAL_HEIGHT = 638
 
 /**
+ * Physical printed card size (ID-card format), in millimeters. The PDF
+ * export renders at exactly this page size — no A4, no scale-to-fit, no
+ * margins — so 1004x638px at this physical size works out to ~300 DPI.
+ */
+export const CARD_PHYSICAL_WIDTH_MM = 84.93
+export const CARD_PHYSICAL_HEIGHT_MM = 53.98
+
+/**
  * Single source of truth for where each dynamic value sits on the employee
  * card template, as percentages of the template image's natural size.
  * Never duplicate these numbers elsewhere — read them from here (or from
@@ -142,8 +150,6 @@ export const EMPLOYEE_CARD_FIELD_LABELS: Record<keyof EmployeeCardLayout, string
   educationProgramType: 'نوع البرنامج التثقيفي',
   educationProgramExpiry: 'تاريخ انتهاء البرنامج التثقيفي',
 }
-
-export const EMPLOYEE_CARD_DISCLAIMER_TEXT = 'نسخة تجريبية غير رسمية'
 
 /**
  * Merges an admin-saved (possibly partial) layout on top of the defaults,

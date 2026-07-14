@@ -45,8 +45,11 @@ export function getBrandingAssetUrl(path: string | null): string | null {
 }
 
 /** Uploads a blank employee card background template and returns its storage path. */
-export async function uploadEmployeeCardTemplate(file: File): Promise<string> {
-  const path = `template/${crypto.randomUUID()}-${file.name}`
+export async function uploadEmployeeCardTemplate(
+  file: File,
+  side: 'front' | 'back' = 'front',
+): Promise<string> {
+  const path = `${side}/${crypto.randomUUID()}-${file.name}`
   const { error } = await supabase.storage
     .from(EMPLOYEE_CARD_TEMPLATE_BUCKET)
     .upload(path, file, { contentType: file.type })

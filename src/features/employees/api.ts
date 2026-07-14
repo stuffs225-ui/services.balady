@@ -1,0 +1,148 @@
+import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
+import { generatePublicToken } from '../../lib/token'
+import type { Employee, EmployeeInsert, EmployeeUpdate } from '../../types/database'
+import type { EmployeeFormValues } from '../../lib/employeeSchema'
+
+export type EmployeeSearchParams = {
+  query?: string
+}
+
+export async function listEmployees({ query }: EmployeeSearchParams = {}): Promise<Employee[]> {
+  let request = supabase.from('employees').select('*').order('created_at', { ascending: false })
+
+  if (query && query.trim()) {
+    const term = `%${query.trim()}%`
+    request = request.or(
+      `employee_name.ilike.${term},certificate_number.ilike.${term},establishment_name.ilike.${term}`,
+    )
+  }
+
+  const { data, error } = await request
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getEmployeeById(id: string): Promise<Employee | null> {
+  const { data, error } = await supabase.from('employees').select('*').eq('id', id).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+function photoPathForToken(token: string): string {
+  return `${token}/photo`
+}
+
+async function uploadEmployeePhoto(token: string, file: File): Promise<string> {
+  const path = photoPathForToken(token)
+  const { error } = await supabase.storage
+    .from(EMPLOYEE_PHOTOS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type })
+  if (error) throw error
+  return path
+}
+
+export async function getEmployeePhotoUrl(path: string | null): Promise<string | null> {
+  if (!path) return null
+  const { data, error } = await supabase.storage
+    .from(EMPLOYEE_PHOTOS_BUCKET)
+    .createSignedUrl(path, 60 * 5)
+  if (error) return null
+  return data.signedUrl
+}
+
+function toInsertPayload(values: EmployeeFormValues, token: string): EmployeeInsert {
+  return {
+    public_token: token,
+    employee_name: values.employeeName,
+    identity_number: values.identityNumber,
+    gender: values.gender,
+    nationality: values.nationality,
+    profession: values.profession,
+    authority_name: values.authorityName,
+    municipality_name: values.municipalityName,
+    certificate_number: values.certificateNumber,
+    license_number: values.licenseNumber || null,
+    establishment_name: values.establishmentName,
+    establishment_number: values.establishmentNumber || null,
+    program_type: values.programType || null,
+    issue_date_hijri: values.issueDateHijri || null,
+    issue_date_gregorian: values.issueDateGregorian,
+    expiry_date_hijri: values.expiryDateHijri || null,
+    expiry_date_gregorian: values.expiryDateGregorian,
+    program_completion_date_hijri: values.programCompletionDateHijri || null,
+    employee_photo_path: null,
+    is_active: true,
+  }
+}
+
+export async function createEmployee(values: EmployeeFormValues): Promise<Employee> {
+  const token = generatePublicToken()
+  let photoPath: string | null = null
+
+  if (values.employeePhoto) {
+    photoPath = await uploadEmployeePhoto(token, values.employeePhoto)
+  }
+
+  const payload = { ...toInsertPayload(values, token), employee_photo_path: photoPath }
+
+  const { data, error } = await supabase.from('employees').insert(payload).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateEmployee(
+  id: string,
+  publicToken: string,
+  currentPhotoPath: string | null,
+  values: EmployeeFormValues,
+): Promise<Employee> {
+  let photoPath = currentPhotoPath
+
+  if (values.employeePhoto) {
+    photoPath = await uploadEmployeePhoto(publicToken, values.employeePhoto)
+  }
+
+  const update: EmployeeUpdate = {
+    employee_name: values.employeeName,
+    identity_number: values.identityNumber,
+    gender: values.gender,
+    nationality: values.nationality,
+    profession: values.profession,
+    authority_name: values.authorityName,
+    municipality_name: values.municipalityName,
+    certificate_number: values.certificateNumber,
+    license_number: values.licenseNumber || null,
+    establishment_name: values.establishmentName,
+    establishment_number: values.establishmentNumber || null,
+    program_type: values.programType || null,
+    issue_date_hijri: values.issueDateHijri || null,
+    issue_date_gregorian: values.issueDateGregorian,
+    expiry_date_hijri: values.expiryDateHijri || null,
+    expiry_date_gregorian: values.expiryDateGregorian,
+    program_completion_date_hijri: values.programCompletionDateHijri || null,
+    employee_photo_path: photoPath,
+  }
+
+  const { data, error } = await supabase
+    .from('employees')
+    .update(update)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deactivateEmployee(id: string): Promise<void> {
+  const { error } = await supabase.from('employees').update({ is_active: false }).eq('id', id)
+  if (error) throw error
+}
+
+export function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === '23505'
+  )
+}

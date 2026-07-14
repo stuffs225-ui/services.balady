@@ -52,8 +52,8 @@ function PublicEmployeePage() {
       />
       <PublicHeader />
 
-      <main className="public-main flex-1">
-        <div className="public-content mx-auto w-full max-w-[820px] pb-[clamp(120px,18vh,220px)]">
+      <main className="public-main">
+        <div className="public-content mx-auto w-full max-w-[820px]">
           {result === 'loading' && (
             <>
               <PublicPageTitle />
@@ -80,16 +80,6 @@ function PublicEmployeePage() {
                 datePreference={datePreference}
                 largeText={isLargeText}
               />
-
-              <div className="mx-auto mt-2 flex w-[min(calc(100%-56px),720px)] justify-center print:hidden">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="rounded-button border border-divider px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-surface-muted"
-                >
-                  طباعة
-                </button>
-              </div>
             </>
           )}
         </div>

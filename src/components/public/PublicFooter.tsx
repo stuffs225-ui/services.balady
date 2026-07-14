@@ -8,21 +8,23 @@ function PublicFooter() {
   const copyrightText = footerCopyrightText.replace('{year}', String(new Date().getFullYear()))
 
   return (
-    <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text print:hidden sm:pt-14 sm:pb-[60px]">
-      <ul className="flex flex-wrap justify-center gap-[22px] sm:gap-[34px]">
+    <footer className="mt-[48px] bg-footer-bg px-[24px] pt-[34px] pb-[28px] text-center text-footer-text print:hidden">
+      <ul className="flex flex-wrap justify-center gap-x-[22px] gap-y-[14px]">
         {links.map((link) => (
           <li key={link.href}>
-            <a href={link.href} className="text-base underline underline-offset-4 sm:text-lg">
+            <a href={link.href} className="text-[15px] font-normal underline underline-offset-4">
               {link.label}
             </a>
           </li>
         ))}
       </ul>
 
-      <p className="mt-10 text-[17px] font-bold sm:mt-12 sm:text-xl">{copyrightText}</p>
-      <p className="mt-2 text-[15px] font-normal opacity-90 sm:text-base">{footerSupportText}</p>
+      <p className="mt-[34px] text-[16px] leading-[1.8] font-bold">{copyrightText}</p>
+      <p className="mt-[23px] text-[15px] leading-[1.8] font-normal opacity-90">
+        {footerSupportText}
+      </p>
 
-      <div className="mt-9 flex flex-wrap justify-center gap-6 sm:mt-11">
+      <div className="mt-9 flex flex-wrap justify-center gap-6">
         <Logo variant="inverted" />
         {footerBadges.map((badge, index) => {
           const image = (

@@ -57,4 +57,18 @@ describe('PublicFooter', () => {
     const plainImage = screen.getByAltText('شارة بدون رابط')
     expect(plainImage.closest('a')).toBeNull()
   })
+
+  it('follows content naturally (fixed margin-top, not pinned via mt-auto)', () => {
+    mockUseSiteSettings.mockReturnValue({
+      footerLinks: [],
+      footerBadges: [],
+      footerCopyrightText: defaultFooterCopyrightText,
+      footerSupportText: defaultFooterSupportText,
+    })
+
+    const { container } = render(<PublicFooter />)
+    const footer = container.querySelector('footer')!
+    expect(footer.className).toContain('mt-[48px]')
+    expect(footer.className).not.toContain('mt-auto')
+  })
 })

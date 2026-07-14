@@ -21,7 +21,6 @@ export type PublicNavItem =
 
 export const publicNavItems: PublicNavItem[] = [
   { label: 'الرئيسية', kind: 'internal', href: '/' },
-  { label: 'كيف تتحقق', kind: 'local-anchor', href: '#digital-verification' },
   { label: 'الإعدادات', kind: 'action', action: 'toggle-settings' },
   { label: 'أدوات سهولة الوصول', kind: 'action', action: 'toggle-accessibility' },
   { label: 'الطباعة', kind: 'action', action: 'print' },

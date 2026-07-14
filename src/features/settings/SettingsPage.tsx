@@ -6,6 +6,7 @@ import {
   footerLinks as defaultFooterLinks,
   defaultFooterCopyrightText,
   defaultFooterSupportText,
+  siteIdentity,
 } from '../../config/siteLinks'
 import type { NavLinkSetting, FooterBadgeSetting } from '../../types/database'
 
@@ -39,6 +40,8 @@ function SettingsPage() {
   const [badges, setBadges] = useState<BadgeDraft[]>([])
   const [footerCopyrightText, setFooterCopyrightText] = useState('')
   const [footerSupportText, setFooterSupportText] = useState('')
+  const [trustBannerText, setTrustBannerText] = useState('')
+  const [accessibilityLinkHref, setAccessibilityLinkHref] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +58,8 @@ function SettingsPage() {
       setBadges(toBadgeDrafts(settings?.footer_badges ?? []))
       setFooterCopyrightText(settings?.footer_copyright_text || defaultFooterCopyrightText)
       setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
+      setTrustBannerText(settings?.trust_banner_text || siteIdentity.demoDisclaimer)
+      setAccessibilityLinkHref(settings?.accessibility_link_href ?? '')
       setIsLoading(false)
     }
 
@@ -115,6 +120,8 @@ function SettingsPage() {
         footer_badges: resolvedBadges,
         footer_copyright_text: footerCopyrightText,
         footer_support_text: footerSupportText,
+        trust_banner_text: trustBannerText,
+        accessibility_link_href: accessibilityLinkHref || null,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -145,6 +152,32 @@ function SettingsPage() {
           {message.text}
         </p>
       )}
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">الشريط العلوي وأدوات الوصول</h2>
+        <div className="mb-3">
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            الجملة الظاهرة أعلى الصفحة العامة
+          </label>
+          <input
+            value={trustBannerText}
+            onChange={(event) => setTrustBannerText(event.target.value)}
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            رابط "أدوات سهولة الوصول" (اختياري — إذا تُرك فارغًا يبقى زر تكبير الخط الحالي)
+          </label>
+          <input
+            value={accessibilityLinkHref}
+            onChange={(event) => setAccessibilityLinkHref(event.target.value)}
+            placeholder="https://example.com/accessibility"
+            dir="ltr"
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+      </section>
 
       <section className="mb-8 border-b border-divider pb-8">
         <h2 className="mb-4 font-bold text-heading">الشعار</h2>

@@ -10,11 +10,6 @@ describe('publicNavItems', () => {
     }
   })
 
-  it('includes the digital verification local anchor', () => {
-    const item = publicNavItems.find((entry) => entry.kind === 'local-anchor')
-    expect(item?.href).toBe('#digital-verification')
-  })
-
   it('exposes print, settings, and accessibility as local actions only', () => {
     const actionLabels = publicNavItems
       .filter((item) => item.kind === 'action')

@@ -5,6 +5,7 @@ import {
   footerLinks as defaultFooterLinks,
   defaultFooterCopyrightText,
   defaultFooterSupportText,
+  siteIdentity,
 } from '../../config/siteLinks'
 import type { NavLinkSetting } from '../../types/database'
 
@@ -21,6 +22,8 @@ export type ResolvedSiteBranding = {
   footerBadges: ResolvedFooterBadge[]
   footerCopyrightText: string
   footerSupportText: string
+  trustBannerText: string
+  accessibilityLinkHref: string | null
   isLoading: boolean
 }
 
@@ -37,6 +40,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
     footerBadges: [],
     footerCopyrightText: defaultFooterCopyrightText,
     footerSupportText: defaultFooterSupportText,
+    trustBannerText: siteIdentity.demoDisclaimer,
+    accessibilityLinkHref: null,
     isLoading: true,
   })
 
@@ -59,6 +64,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
           })),
           footerCopyrightText: settings?.footer_copyright_text || defaultFooterCopyrightText,
           footerSupportText: settings?.footer_support_text || defaultFooterSupportText,
+          trustBannerText: settings?.trust_banner_text || siteIdentity.demoDisclaimer,
+          accessibilityLinkHref: settings?.accessibility_link_href ?? null,
           isLoading: false,
         })
       } catch {

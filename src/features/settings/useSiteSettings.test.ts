@@ -6,6 +6,7 @@ import {
   footerLinks as defaultFooterLinks,
   defaultFooterCopyrightText,
   defaultFooterSupportText,
+  siteIdentity,
 } from '../../config/siteLinks'
 
 const mockGetSiteSettings = vi.fn()
@@ -33,6 +34,8 @@ describe('useSiteSettings', () => {
     expect(result.current.footerBadges).toEqual([])
     expect(result.current.footerCopyrightText).toBe(defaultFooterCopyrightText)
     expect(result.current.footerSupportText).toBe(defaultFooterSupportText)
+    expect(result.current.trustBannerText).toBe(siteIdentity.demoDisclaimer)
+    expect(result.current.accessibilityLinkHref).toBeNull()
   })
 
   it('falls back to static defaults when the query fails', async () => {
@@ -53,6 +56,8 @@ describe('useSiteSettings', () => {
       footer_badges: [{ imagePath: 'badges/one.png', alt: 'شارة', href: 'https://example.test' }],
       footer_copyright_text: 'حقوق مخصصة © {year}',
       footer_support_text: 'دعم مخصص',
+      trust_banner_text: 'جملة مخصصة أعلى الصفحة',
+      accessibility_link_href: 'https://example.test/accessibility',
       updated_at: '2026-01-01T00:00:00Z',
     })
 
@@ -67,5 +72,7 @@ describe('useSiteSettings', () => {
     ])
     expect(result.current.footerCopyrightText).toBe('حقوق مخصصة © {year}')
     expect(result.current.footerSupportText).toBe('دعم مخصص')
+    expect(result.current.trustBannerText).toBe('جملة مخصصة أعلى الصفحة')
+    expect(result.current.accessibilityLinkHref).toBe('https://example.test/accessibility')
   })
 })

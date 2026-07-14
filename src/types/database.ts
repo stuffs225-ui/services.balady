@@ -73,6 +73,8 @@ export type SiteSettings = {
   footer_badges: FooterBadgeSetting[]
   footer_copyright_text: string
   footer_support_text: string
+  trust_banner_text: string
+  accessibility_link_href: string | null
   updated_at: string
 }
 
@@ -85,6 +87,8 @@ export type SiteSettingsUpdate = Partial<
     | 'footer_badges'
     | 'footer_copyright_text'
     | 'footer_support_text'
+    | 'trust_banner_text'
+    | 'accessibility_link_href'
   >
 >
 

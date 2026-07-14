@@ -19,18 +19,6 @@ function PublicHeader() {
   return (
     <header className="min-h-[78px] bg-surface print:hidden">
       <div className="flex min-h-[78px] items-center justify-between px-[18px] py-[12px]">
-        <div className="flex items-center gap-2">
-          {logoUrl ? (
-            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-8 w-8 object-contain" />
-          ) : (
-            <Logo className="h-8 w-8" />
-          )}
-          <div className="text-right">
-            <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
-            <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
-          </div>
-        </div>
-
         <button
           type="button"
           aria-expanded={isOpen}
@@ -41,6 +29,18 @@ function PublicHeader() {
         >
           {isOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
+
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
+            <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
+          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-8 w-8 object-contain" />
+          ) : (
+            <Logo className="h-8 w-8" />
+          )}
+        </div>
       </div>
 
       <MobileNavigation isOpen={isOpen} navLinks={navLinks} />

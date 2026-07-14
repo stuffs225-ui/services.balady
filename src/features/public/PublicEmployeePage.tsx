@@ -13,12 +13,14 @@ import VerificationNotFoundState from '../../components/public/VerificationNotFo
 import VerificationNetworkErrorState from '../../components/public/VerificationNetworkErrorState'
 import { fetchPublicCertificate, type PublicCertificateResult } from './api'
 import type { DatePreference } from '../../config/publicNavigation'
+import { useSiteSettings } from '../settings/useSiteSettings'
 
 function PublicEmployeePage() {
   const { token } = useParams<{ token: string }>()
   const [result, setResult] = useState<PublicCertificateResult | 'loading'>('loading')
   const [datePreference, setDatePreference] = useState<DatePreference | null>(null)
   const [isLargeText, setIsLargeText] = useState(false)
+  const { accessibilityLinkHref } = useSiteSettings()
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +51,7 @@ function PublicEmployeePage() {
         onDatePreferenceChange={setDatePreference}
         isLargeText={isLargeText}
         onToggleLargeText={() => setIsLargeText((prev) => !prev)}
+        accessibilityLinkHref={accessibilityLinkHref}
       />
       <PublicHeader />
 

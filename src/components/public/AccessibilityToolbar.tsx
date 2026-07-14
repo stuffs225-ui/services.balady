@@ -6,6 +6,7 @@ type AccessibilityToolbarProps = {
   onDatePreferenceChange: (value: DatePreference) => void
   isLargeText: boolean
   onToggleLargeText: () => void
+  accessibilityLinkHref?: string | null
 }
 
 function AccessibilityToolbar({
@@ -13,6 +14,7 @@ function AccessibilityToolbar({
   onDatePreferenceChange,
   isLargeText,
   onToggleLargeText,
+  accessibilityLinkHref = null,
 }: AccessibilityToolbarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -67,15 +69,25 @@ function AccessibilityToolbar({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onToggleLargeText}
-        aria-pressed={isLargeText}
-        className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base"
-      >
-        أدوات سهولة الوصول
-        <AccessibilityIcon />
-      </button>
+      {accessibilityLinkHref ? (
+        <a
+          href={accessibilityLinkHref}
+          className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base"
+        >
+          أدوات سهولة الوصول
+          <AccessibilityIcon />
+        </a>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggleLargeText}
+          aria-pressed={isLargeText}
+          className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base"
+        >
+          أدوات سهولة الوصول
+          <AccessibilityIcon />
+        </button>
+      )}
     </div>
   )
 }

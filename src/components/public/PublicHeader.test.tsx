@@ -3,7 +3,12 @@ import { render, screen } from '@testing-library/react'
 import PublicHeader from './PublicHeader'
 
 vi.mock('../../features/settings/useSiteSettings', () => ({
-  useSiteSettings: () => ({ logoUrl: null, navLinks: [] }),
+  useSiteSettings: () => ({
+    logoUrl: null,
+    navLinks: [],
+    headerTitleText: 'نظام الشهادات الصحية',
+    headerSubtitleText: '(نسخة تجريبية)',
+  }),
 }))
 
 describe('PublicHeader', () => {
@@ -23,5 +28,11 @@ describe('PublicHeader', () => {
   it('still exposes the accessible menu toggle button', () => {
     render(<PublicHeader />)
     expect(screen.getByRole('button', { name: 'فتح قائمة التنقل' })).toBeInTheDocument()
+  })
+
+  it('renders the admin-configurable header title and subtitle', () => {
+    render(<PublicHeader />)
+    expect(screen.getByText('نظام الشهادات الصحية')).toBeInTheDocument()
+    expect(screen.getByText('(نسخة تجريبية)')).toBeInTheDocument()
   })
 })

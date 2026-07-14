@@ -30,7 +30,7 @@ export type EmployeeUpdate = Partial<
   Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at'>
 >
 
-export type CertificateStatus = 'active' | 'expiring' | 'expired' | 'revoked'
+export type CertificateStatus = 'active' | 'expired' | 'revoked'
 
 export type PublicCertificate = {
   employee_name: string
@@ -75,6 +75,8 @@ export type SiteSettings = {
   footer_support_text: string
   trust_banner_text: string
   accessibility_link_href: string | null
+  header_title_text: string
+  header_subtitle_text: string
   updated_at: string
 }
 
@@ -89,6 +91,8 @@ export type SiteSettingsUpdate = Partial<
     | 'footer_support_text'
     | 'trust_banner_text'
     | 'accessibility_link_href'
+    | 'header_title_text'
+    | 'header_subtitle_text'
   >
 >
 

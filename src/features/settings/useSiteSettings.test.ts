@@ -36,6 +36,8 @@ describe('useSiteSettings', () => {
     expect(result.current.footerSupportText).toBe(defaultFooterSupportText)
     expect(result.current.trustBannerText).toBe(siteIdentity.demoDisclaimer)
     expect(result.current.accessibilityLinkHref).toBeNull()
+    expect(result.current.headerTitleText).toBe(siteIdentity.nameAr)
+    expect(result.current.headerSubtitleText).toBe(`(${siteIdentity.demoLabel})`)
   })
 
   it('falls back to static defaults when the query fails', async () => {
@@ -58,6 +60,8 @@ describe('useSiteSettings', () => {
       footer_support_text: 'دعم مخصص',
       trust_banner_text: 'جملة مخصصة أعلى الصفحة',
       accessibility_link_href: 'https://example.test/accessibility',
+      header_title_text: 'اسم نظام مخصص',
+      header_subtitle_text: '(نص فرعي مخصص)',
       updated_at: '2026-01-01T00:00:00Z',
     })
 
@@ -74,5 +78,7 @@ describe('useSiteSettings', () => {
     expect(result.current.footerSupportText).toBe('دعم مخصص')
     expect(result.current.trustBannerText).toBe('جملة مخصصة أعلى الصفحة')
     expect(result.current.accessibilityLinkHref).toBe('https://example.test/accessibility')
+    expect(result.current.headerTitleText).toBe('اسم نظام مخصص')
+    expect(result.current.headerSubtitleText).toBe('(نص فرعي مخصص)')
   })
 })

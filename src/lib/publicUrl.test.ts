@@ -15,4 +15,14 @@ describe('getEmployeePublicUrl', () => {
     vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://example-demo.vercel.app/')
     expect(getEmployeePublicUrl('abc123')).toBe('https://example-demo.vercel.app/e/abc123')
   })
+
+  it('falls back to the current browser origin when VITE_APP_PUBLIC_URL is unset', () => {
+    vi.stubEnv('VITE_APP_PUBLIC_URL', '')
+    expect(getEmployeePublicUrl('abc123')).toBe(`${window.location.origin}/e/abc123`)
+  })
+
+  it('always returns an absolute, scannable URL', () => {
+    vi.stubEnv('VITE_APP_PUBLIC_URL', '')
+    expect(getEmployeePublicUrl('abc123')).toMatch(/^https?:\/\//)
+  })
 })

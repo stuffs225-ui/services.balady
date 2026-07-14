@@ -12,8 +12,8 @@ describe('computeCertificateStatus', () => {
     expect(computeCertificateStatus(true, '2026-01-01', today)).toBe('expired')
   })
 
-  it('is expiring within the 30-day window', () => {
-    expect(computeCertificateStatus(true, '2026-07-30', today)).toBe('expiring')
+  it('is active (not expiring) even when close to the expiry date', () => {
+    expect(computeCertificateStatus(true, '2026-07-30', today)).toBe('active')
   })
 
   it('is active when well beyond the expiry window', () => {

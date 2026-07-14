@@ -13,13 +13,20 @@ export async function fetchPublicCertificate(token: string): Promise<PublicCerti
     return { kind: 'network-error' }
   }
 
-  const certificate = data?.[0]
-  if (!certificate) {
+  const raw = data?.[0]
+  if (!raw) {
     return { kind: 'not-found' }
   }
 
+  // Defensive coercion in case an older, not-yet-migrated RPC still returns
+  // the retired "expiring" status.
+  const certificate: PublicCertificate = {
+    ...raw,
+    status: (raw.status as string) === 'expiring' ? 'active' : raw.status,
+  }
+
   let photoUrl: string | null = null
-  if (certificate.has_photo) {
+  if (raw.has_photo) {
     const { data: signed } = await supabase.storage
       .from(EMPLOYEE_PHOTOS_BUCKET)
       .createSignedUrl(`${token}/photo`, 60)

@@ -71,11 +71,21 @@ export type SiteSettings = {
   nav_links: NavLinkSetting[]
   footer_links: NavLinkSetting[]
   footer_badges: FooterBadgeSetting[]
+  footer_copyright_text: string
+  footer_support_text: string
   updated_at: string
 }
 
 export type SiteSettingsUpdate = Partial<
-  Pick<SiteSettings, 'logo_path' | 'nav_links' | 'footer_links' | 'footer_badges'>
+  Pick<
+    SiteSettings,
+    | 'logo_path'
+    | 'nav_links'
+    | 'footer_links'
+    | 'footer_badges'
+    | 'footer_copyright_text'
+    | 'footer_support_text'
+  >
 >
 
 export type Database = {

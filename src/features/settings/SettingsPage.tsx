@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import Logo from '../../components/brand/Logo'
 import { getSiteSettings, getBrandingAssetUrl, updateSiteSettings, uploadBrandingAsset } from './api'
+import {
+  navLinks as defaultNavLinks,
+  footerLinks as defaultFooterLinks,
+  defaultFooterCopyrightText,
+  defaultFooterSupportText,
+} from '../../config/siteLinks'
 import type { NavLinkSetting, FooterBadgeSetting } from '../../types/database'
 
 type BadgeDraft = {
@@ -31,6 +37,8 @@ function SettingsPage() {
   const [navLinks, setNavLinks] = useState<NavLinkSetting[]>([])
   const [footerLinks, setFooterLinks] = useState<NavLinkSetting[]>([])
   const [badges, setBadges] = useState<BadgeDraft[]>([])
+  const [footerCopyrightText, setFooterCopyrightText] = useState('')
+  const [footerSupportText, setFooterSupportText] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -39,9 +47,14 @@ function SettingsPage() {
       const settings = await getSiteSettings()
       if (cancelled) return
       setLogoPreview(getBrandingAssetUrl(settings?.logo_path ?? null))
-      setNavLinks(settings?.nav_links ?? [])
-      setFooterLinks(settings?.footer_links ?? [])
+      // Seed the editor with what visitors currently see (the static
+      // defaults) when no admin-configured links have been saved yet, so
+      // there's always something to edit rather than a blank list.
+      setNavLinks(settings?.nav_links?.length ? settings.nav_links : defaultNavLinks)
+      setFooterLinks(settings?.footer_links?.length ? settings.footer_links : defaultFooterLinks)
       setBadges(toBadgeDrafts(settings?.footer_badges ?? []))
+      setFooterCopyrightText(settings?.footer_copyright_text || defaultFooterCopyrightText)
+      setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
       setIsLoading(false)
     }
 
@@ -100,6 +113,8 @@ function SettingsPage() {
         nav_links: navLinks.filter((link) => link.label && link.href),
         footer_links: footerLinks.filter((link) => link.label && link.href),
         footer_badges: resolvedBadges,
+        footer_copyright_text: footerCopyrightText,
+        footer_support_text: footerSupportText,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -215,6 +230,28 @@ function SettingsPage() {
             </button>
           </div>
         ))}
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">نصوص الفوتر</h2>
+        <div className="mb-3">
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            نص حقوق النشر (استخدم <span dir="ltr">{'{year}'}</span> ليتم استبداله بالسنة الحالية تلقائيًا)
+          </label>
+          <input
+            value={footerCopyrightText}
+            onChange={(event) => setFooterCopyrightText(event.target.value)}
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-bold text-text-primary">نص الدعم</label>
+          <input
+            value={footerSupportText}
+            onChange={(event) => setFooterSupportText(event.target.value)}
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
       </section>
 
       <section className="mb-8">

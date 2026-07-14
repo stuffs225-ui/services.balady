@@ -1,0 +1,60 @@
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import PublicFooter from './PublicFooter'
+import { defaultFooterCopyrightText, defaultFooterSupportText } from '../../config/siteLinks'
+
+const mockUseSiteSettings = vi.fn()
+vi.mock('../../features/settings/useSiteSettings', () => ({
+  useSiteSettings: () => mockUseSiteSettings(),
+}))
+
+describe('PublicFooter', () => {
+  it('replaces {year} in the default copyright text with the current year', () => {
+    mockUseSiteSettings.mockReturnValue({
+      footerLinks: [],
+      footerBadges: [],
+      footerCopyrightText: defaultFooterCopyrightText,
+      footerSupportText: defaultFooterSupportText,
+    })
+
+    render(<PublicFooter />)
+
+    const year = new Date().getFullYear()
+    expect(screen.getByText(`جميع الحقوق محفوظة للجهة التجريبية © ${year}`)).toBeInTheDocument()
+    expect(screen.getByText(defaultFooterSupportText)).toBeInTheDocument()
+  })
+
+  it('renders an admin-edited copyright/support text as-is', () => {
+    mockUseSiteSettings.mockReturnValue({
+      footerLinks: [],
+      footerBadges: [],
+      footerCopyrightText: 'جميع الحقوق محفوظة لشركتي الخاصة',
+      footerSupportText: 'دعم فني على مدار الساعة',
+    })
+
+    render(<PublicFooter />)
+
+    expect(screen.getByText('جميع الحقوق محفوظة لشركتي الخاصة')).toBeInTheDocument()
+    expect(screen.getByText('دعم فني على مدار الساعة')).toBeInTheDocument()
+  })
+
+  it('renders footer badges with and without a link', () => {
+    mockUseSiteSettings.mockReturnValue({
+      footerLinks: [],
+      footerBadges: [
+        { imageUrl: 'https://cdn.test/badge-linked.png', alt: 'شارة مرتبطة', href: 'https://example.test' },
+        { imageUrl: 'https://cdn.test/badge-plain.png', alt: 'شارة بدون رابط', href: null },
+      ],
+      footerCopyrightText: defaultFooterCopyrightText,
+      footerSupportText: defaultFooterSupportText,
+    })
+
+    render(<PublicFooter />)
+
+    const linkedImage = screen.getByAltText('شارة مرتبطة')
+    expect(linkedImage.closest('a')).toHaveAttribute('href', 'https://example.test')
+
+    const plainImage = screen.getByAltText('شارة بدون رابط')
+    expect(plainImage.closest('a')).toBeNull()
+  })
+})

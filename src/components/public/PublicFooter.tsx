@@ -3,8 +3,9 @@ import Logo from '../brand/Logo'
 import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicFooter() {
-  const { footerLinks, footerBadges } = useSiteSettings()
+  const { footerLinks, footerBadges, footerCopyrightText, footerSupportText } = useSiteSettings()
   const links = footerLinks.length ? footerLinks : defaultFooterLinks
+  const copyrightText = footerCopyrightText.replace('{year}', String(new Date().getFullYear()))
 
   return (
     <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text print:hidden sm:pt-14 sm:pb-[60px]">
@@ -18,12 +19,8 @@ function PublicFooter() {
         ))}
       </ul>
 
-      <p className="mt-10 text-[17px] font-bold sm:mt-12 sm:text-xl">
-        جميع الحقوق محفوظة للجهة التجريبية © {new Date().getFullYear()}
-      </p>
-      <p className="mt-2 text-[15px] font-normal opacity-90 sm:text-base">
-        تم تطوير وتشغيل النسخة التجريبية لأغراض العرض
-      </p>
+      <p className="mt-10 text-[17px] font-bold sm:mt-12 sm:text-xl">{copyrightText}</p>
+      <p className="mt-2 text-[15px] font-normal opacity-90 sm:text-base">{footerSupportText}</p>
 
       <div className="mt-9 flex flex-wrap justify-center gap-6 sm:mt-11">
         <Logo variant="inverted" />

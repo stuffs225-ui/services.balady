@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from './SettingsPage'
 
@@ -39,10 +39,10 @@ describe('SettingsPage', () => {
     render(<SettingsPage />)
     await screen.findByDisplayValue('عن النظام')
 
+    const before = screen.getAllByPlaceholderText('النص').length
     await userEvent.click(screen.getAllByRole('button', { name: 'إضافة رابط' })[0])
 
-    const labelInputs = screen.getAllByPlaceholderText('النص')
-    expect(labelInputs).toHaveLength(2)
+    expect(screen.getAllByPlaceholderText('النص')).toHaveLength(before + 1)
   })
 
   it('saves edited links and filters out empty rows', async () => {
@@ -75,5 +75,76 @@ describe('SettingsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
 
     expect(await screen.findByText('تعذر حفظ الإعدادات، يرجى المحاولة مرة أخرى')).toBeInTheDocument()
+  })
+
+  it('seeds the editor with the current on-screen nav/footer links when none are saved yet', async () => {
+    mockGetSiteSettings.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      logo_path: null,
+      nav_links: [],
+      footer_links: [],
+      footer_badges: [],
+      updated_at: '2026-01-01T00:00:00Z',
+    })
+
+    render(<SettingsPage />)
+
+    // The exact items currently shown in the mobile menu must be editable,
+    // not a blank form the admin has to rebuild from scratch.
+    expect(await screen.findByDisplayValue('عن النظام')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('الخدمات')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('الاستعلامات')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('تواصل معنا')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('/services')).toBeInTheDocument()
+  })
+
+  it('lets the admin change where an existing nav item points and saves it', async () => {
+    mockGetSiteSettings.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      logo_path: null,
+      nav_links: [],
+      footer_links: [],
+      footer_badges: [],
+      updated_at: '2026-01-01T00:00:00Z',
+    })
+
+    render(<SettingsPage />)
+    const servicesHrefInput = await screen.findByDisplayValue('/services')
+
+    await userEvent.clear(servicesHrefInput)
+    await userEvent.type(servicesHrefInput, '/our-services-page')
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.nav_links).toEqual(
+      expect.arrayContaining([{ label: 'الخدمات', href: '/our-services-page' }]),
+    )
+  })
+
+  it('seeds footer copyright/support text with the current defaults', async () => {
+    render(<SettingsPage />)
+    expect(await screen.findByDisplayValue('جميع الحقوق محفوظة للجهة التجريبية © {year}')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('تم تطوير وتشغيل النسخة التجريبية لأغراض العرض')).toBeInTheDocument()
+  })
+
+  it('saves edited footer copyright/support text', async () => {
+    render(<SettingsPage />)
+    const copyrightInput = await screen.findByDisplayValue(
+      'جميع الحقوق محفوظة للجهة التجريبية © {year}',
+    )
+    const supportInput = screen.getByDisplayValue('تم تطوير وتشغيل النسخة التجريبية لأغراض العرض')
+
+    // user-event's type() treats "{" as the start of a special key
+    // sequence, so set the literal value directly instead.
+    fireEvent.change(copyrightInput, { target: { value: 'جميع الحقوق محفوظة لشركتي © {year}' } })
+    fireEvent.change(supportInput, { target: { value: 'نص دعم مخصص' } })
+
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.footer_copyright_text).toBe('جميع الحقوق محفوظة لشركتي © {year}')
+    expect(payload.footer_support_text).toBe('نص دعم مخصص')
   })
 })

@@ -121,6 +121,12 @@ code deploy:
 - the main navigation links (label + URL, add/remove any number)
 - the footer links
 - footer logos/badges (upload an image, optional link, optional alt text)
+- the footer copyright text (use `{year}` to auto-insert the current year)
+  and the footer support text
+
+The nav/footer link editors are pre-filled with the current live values
+(the static defaults, until you save your own) so you're always editing
+what visitors actually see rather than starting from a blank form.
 
 These are stored in the `site_settings` table and a public `branding-assets`
 storage bucket (public by design — logos must render for every visitor with

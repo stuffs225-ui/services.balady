@@ -1,7 +1,12 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useSiteSettings } from './useSiteSettings'
-import { navLinks as defaultNavLinks, footerLinks as defaultFooterLinks } from '../../config/siteLinks'
+import {
+  navLinks as defaultNavLinks,
+  footerLinks as defaultFooterLinks,
+  defaultFooterCopyrightText,
+  defaultFooterSupportText,
+} from '../../config/siteLinks'
 
 const mockGetSiteSettings = vi.fn()
 const mockGetBrandingAssetUrl = vi.fn((path: string | null) => (path ? `https://cdn.test/${path}` : null))
@@ -26,6 +31,8 @@ describe('useSiteSettings', () => {
     expect(result.current.footerLinks).toEqual(defaultFooterLinks)
     expect(result.current.logoUrl).toBeNull()
     expect(result.current.footerBadges).toEqual([])
+    expect(result.current.footerCopyrightText).toBe(defaultFooterCopyrightText)
+    expect(result.current.footerSupportText).toBe(defaultFooterSupportText)
   })
 
   it('falls back to static defaults when the query fails', async () => {
@@ -44,6 +51,8 @@ describe('useSiteSettings', () => {
       nav_links: [{ label: 'رئيسية', href: '/home' }],
       footer_links: [{ label: 'شروط', href: '/terms-custom' }],
       footer_badges: [{ imagePath: 'badges/one.png', alt: 'شارة', href: 'https://example.test' }],
+      footer_copyright_text: 'حقوق مخصصة © {year}',
+      footer_support_text: 'دعم مخصص',
       updated_at: '2026-01-01T00:00:00Z',
     })
 
@@ -56,5 +65,7 @@ describe('useSiteSettings', () => {
     expect(result.current.footerBadges).toEqual([
       { imageUrl: 'https://cdn.test/badges/one.png', alt: 'شارة', href: 'https://example.test' },
     ])
+    expect(result.current.footerCopyrightText).toBe('حقوق مخصصة © {year}')
+    expect(result.current.footerSupportText).toBe('دعم مخصص')
   })
 })

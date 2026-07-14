@@ -32,6 +32,10 @@ export const footerLinks: SiteNavLink[] = [
   { label: 'سياسة الخصوصية', href: '/privacy' },
 ]
 
+/** "{year}" is replaced with the current year at render time. */
+export const defaultFooterCopyrightText = 'جميع الحقوق محفوظة للجهة التجريبية © {year}'
+export const defaultFooterSupportText = 'تم تطوير وتشغيل النسخة التجريبية لأغراض العرض'
+
 export const siteIdentity = {
   nameAr: 'نظام الشهادات الصحية',
   nameEn: 'Health Certificate Mini System',

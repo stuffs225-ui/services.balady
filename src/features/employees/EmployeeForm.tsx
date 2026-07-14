@@ -2,12 +2,20 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
+import { gregorianToHijri } from '../../lib/dates'
+
+type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto'>
 
 type FieldConfig = {
-  name: Exclude<keyof EmployeeFormValues, 'employeePhoto'>
+  name: TextFieldName
   label: string
   type: 'text' | 'date' | 'select'
   options?: string[]
+}
+
+const GREGORIAN_TO_HIJRI: Partial<Record<TextFieldName, TextFieldName>> = {
+  issueDateGregorian: 'issueDateHijri',
+  expiryDateGregorian: 'expiryDateHijri',
 }
 
 const FIELDS: FieldConfig[] = [
@@ -126,7 +134,19 @@ function EmployeeForm({
             <input
               id={field.name}
               type={field.type}
-              {...register(field.name)}
+              {...register(
+                field.name,
+                GREGORIAN_TO_HIJRI[field.name]
+                  ? {
+                      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                        const hijriField = GREGORIAN_TO_HIJRI[field.name]!
+                        setValue(hijriField, gregorianToHijri(event.target.value), {
+                          shouldValidate: true,
+                        })
+                      },
+                    }
+                  : undefined,
+              )}
               className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary"
             />
           )}

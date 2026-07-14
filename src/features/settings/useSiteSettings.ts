@@ -24,6 +24,8 @@ export type ResolvedSiteBranding = {
   footerSupportText: string
   trustBannerText: string
   accessibilityLinkHref: string | null
+  headerTitleText: string
+  headerSubtitleText: string
   isLoading: boolean
 }
 
@@ -42,6 +44,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
     footerSupportText: defaultFooterSupportText,
     trustBannerText: siteIdentity.demoDisclaimer,
     accessibilityLinkHref: null,
+    headerTitleText: siteIdentity.nameAr,
+    headerSubtitleText: `(${siteIdentity.demoLabel})`,
     isLoading: true,
   })
 
@@ -66,6 +70,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
           footerSupportText: settings?.footer_support_text || defaultFooterSupportText,
           trustBannerText: settings?.trust_banner_text || siteIdentity.demoDisclaimer,
           accessibilityLinkHref: settings?.accessibility_link_href ?? null,
+          headerTitleText: settings?.header_title_text || siteIdentity.nameAr,
+          headerSubtitleText: settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`,
           isLoading: false,
         })
       } catch {

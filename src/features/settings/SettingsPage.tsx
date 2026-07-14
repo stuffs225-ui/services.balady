@@ -42,6 +42,8 @@ function SettingsPage() {
   const [footerSupportText, setFooterSupportText] = useState('')
   const [trustBannerText, setTrustBannerText] = useState('')
   const [accessibilityLinkHref, setAccessibilityLinkHref] = useState('')
+  const [headerTitleText, setHeaderTitleText] = useState('')
+  const [headerSubtitleText, setHeaderSubtitleText] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -60,6 +62,8 @@ function SettingsPage() {
       setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
       setTrustBannerText(settings?.trust_banner_text || siteIdentity.demoDisclaimer)
       setAccessibilityLinkHref(settings?.accessibility_link_href ?? '')
+      setHeaderTitleText(settings?.header_title_text || siteIdentity.nameAr)
+      setHeaderSubtitleText(settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`)
       setIsLoading(false)
     }
 
@@ -122,6 +126,8 @@ function SettingsPage() {
         footer_support_text: footerSupportText,
         trust_banner_text: trustBannerText,
         accessibility_link_href: accessibilityLinkHref || null,
+        header_title_text: headerTitleText,
+        header_subtitle_text: headerSubtitleText,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -174,6 +180,30 @@ function SettingsPage() {
             onChange={(event) => setAccessibilityLinkHref(event.target.value)}
             placeholder="https://example.com/accessibility"
             dir="ltr"
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">عنوان الرأس (الهيدر)</h2>
+        <div className="mb-3">
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            اسم النظام (السطر الأول)
+          </label>
+          <input
+            value={headerTitleText}
+            onChange={(event) => setHeaderTitleText(event.target.value)}
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            النص الفرعي (السطر الثاني)
+          </label>
+          <input
+            value={headerSubtitleText}
+            onChange={(event) => setHeaderSubtitleText(event.target.value)}
             className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
           />
         </div>

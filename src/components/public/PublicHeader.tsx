@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import Logo from '../brand/Logo'
-import { siteIdentity } from '../../config/siteLinks'
 import MobileNavigation from './MobileNavigation'
 import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicHeader() {
   const [isOpen, setIsOpen] = useState(false)
-  const { logoUrl, navLinks } = useSiteSettings()
+  const { logoUrl, navLinks, headerTitleText, headerSubtitleText } = useSiteSettings()
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -30,15 +29,15 @@ function PublicHeader() {
           {isOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
-            <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
+            <p className="text-base font-bold text-heading sm:text-lg">{headerTitleText}</p>
+            <p className="text-sm font-medium text-brand-primary">{headerSubtitleText}</p>
           </div>
           {logoUrl ? (
-            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-8 w-8 object-contain" />
+            <img src={logoUrl} alt={headerTitleText} className="h-16 w-16 object-contain" />
           ) : (
-            <Logo className="h-8 w-8" />
+            <Logo className="h-16 w-16" />
           )}
         </div>
       </div>

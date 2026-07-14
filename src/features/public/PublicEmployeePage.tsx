@@ -12,10 +12,13 @@ import VerificationLoadingState from '../../components/public/VerificationLoadin
 import VerificationNotFoundState from '../../components/public/VerificationNotFoundState'
 import VerificationNetworkErrorState from '../../components/public/VerificationNetworkErrorState'
 import { fetchPublicCertificate, type PublicCertificateResult } from './api'
+import type { DatePreference } from '../../config/publicNavigation'
 
 function PublicEmployeePage() {
   const { token } = useParams<{ token: string }>()
   const [result, setResult] = useState<PublicCertificateResult | 'loading'>('loading')
+  const [datePreference, setDatePreference] = useState<DatePreference | null>(null)
+  const [isLargeText, setIsLargeText] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -41,7 +44,12 @@ function PublicEmployeePage() {
   return (
     <div className="public-verification flex min-h-svh flex-col bg-page-bg">
       <PublicTrustBanner />
-      <AccessibilityToolbar />
+      <AccessibilityToolbar
+        datePreference={datePreference}
+        onDatePreferenceChange={setDatePreference}
+        isLargeText={isLargeText}
+        onToggleLargeText={() => setIsLargeText((prev) => !prev)}
+      />
       <PublicHeader />
 
       <main className="public-main flex-1">
@@ -67,7 +75,21 @@ function PublicEmployeePage() {
                 photoUrl={result.photoUrl}
                 employeeName={result.certificate.employee_name}
               />
-              <CertificateFieldList certificate={result.certificate} />
+              <CertificateFieldList
+                certificate={result.certificate}
+                datePreference={datePreference}
+                largeText={isLargeText}
+              />
+
+              <div className="mx-auto mt-2 flex w-[min(calc(100%-56px),720px)] justify-center print:hidden">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-button border border-divider px-5 py-2.5 text-sm font-bold text-text-primary hover:bg-surface-muted"
+                >
+                  طباعة
+                </button>
+              </div>
             </>
           )}
         </div>

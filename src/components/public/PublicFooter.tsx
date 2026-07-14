@@ -3,7 +3,7 @@ import Logo from '../brand/Logo'
 
 function PublicFooter() {
   return (
-    <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text sm:pt-14 sm:pb-[60px]">
+    <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text print:hidden sm:pt-14 sm:pb-[60px]">
       <ul className="flex flex-wrap justify-center gap-[22px] sm:gap-[34px]">
         {footerLinks.map((link) => (
           <li key={link.href}>

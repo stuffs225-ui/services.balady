@@ -8,7 +8,11 @@ import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BASE_URL = process.env.SCREENSHOT_BASE_URL || 'http://localhost:4173'
-const OUTPUT_DIR = path.join(__dirname, '..', 'visual-output')
+const OUTPUT_DIR = path.join(
+  __dirname,
+  '..',
+  process.env.SCREENSHOT_OUTPUT_DIR || 'visual-output',
+)
 const AVATAR_SVG = readFileSync(path.join(__dirname, 'fixtures/demo-avatar.svg'))
 
 const DEMO_CERTIFICATE = {
@@ -33,13 +37,12 @@ const DEMO_CERTIFICATE = {
   status: 'active',
 }
 
-const VIEWPORTS = [
-  { name: '360', width: 360, height: 900 },
-  { name: '390', width: 390, height: 900 },
-  { name: '430', width: 430, height: 900 },
-  { name: '768', width: 768, height: 1000 },
-  { name: 'desktop', width: 1280, height: 1000 },
-]
+const VIEWPORTS = (process.env.SCREENSHOT_VIEWPORTS || '360,390,430,768,desktop:1280')
+  .split(',')
+  .map((entry) => {
+    const [name, width] = entry.includes(':') ? entry.split(':') : [entry, entry]
+    return { name, width: Number(width), height: 1000 }
+  })
 
 async function main() {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })

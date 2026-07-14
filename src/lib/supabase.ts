@@ -17,4 +17,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
 
 export const EMPLOYEE_PHOTOS_BUCKET = 'employee-photos'
 export const BRANDING_ASSETS_BUCKET = 'branding-assets'
+export const EMPLOYEE_CARD_TEMPLATE_BUCKET = 'employee-card-template'
 export const SITE_SETTINGS_ID = '00000000-0000-0000-0000-000000000001'

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Logo from '../../components/brand/Logo'
 import { getSiteSettings, getBrandingAssetUrl, updateSiteSettings, uploadBrandingAsset } from './api'
 import {
@@ -158,6 +159,20 @@ function SettingsPage() {
           {message.text}
         </p>
       )}
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">قالب بطاقة الموظف</h2>
+        <p className="mb-4 text-sm text-text-secondary">
+          ارفع صورة خلفية البطاقة المطبوعة وعايِر مواضع البيانات (الاسم، الصورة، الكيو آر، وبقية
+          الحقول) فوقها.
+        </p>
+        <Link
+          to="/settings/employee-card-template"
+          className="inline-block rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+        >
+          فتح إعدادات قالب البطاقة
+        </Link>
+      </section>
 
       <section className="mb-8 border-b border-divider pb-8">
         <h2 className="mb-4 font-bold text-heading">الشريط العلوي وأدوات الوصول</h2>

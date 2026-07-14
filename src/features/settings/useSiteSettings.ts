@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSiteSettings, getBrandingAssetUrl } from './api'
+import { getSiteSettings, getBrandingAssetUrl, getEmployeeCardTemplateUrl } from './api'
 import {
   navLinks as defaultNavLinks,
   footerLinks as defaultFooterLinks,
@@ -7,7 +7,8 @@ import {
   defaultFooterSupportText,
   siteIdentity,
 } from '../../config/siteLinks'
-import type { NavLinkSetting } from '../../types/database'
+import { mergeEmployeeCardLayout } from '../../config/employeeCardLayout'
+import type { EmployeeCardLayout, NavLinkSetting } from '../../types/database'
 
 export type ResolvedFooterBadge = {
   imageUrl: string | null
@@ -26,6 +27,8 @@ export type ResolvedSiteBranding = {
   accessibilityLinkHref: string | null
   headerTitleText: string
   headerSubtitleText: string
+  employeeCardTemplateUrl: string | null
+  employeeCardLayout: EmployeeCardLayout
   isLoading: boolean
 }
 
@@ -46,6 +49,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
     accessibilityLinkHref: null,
     headerTitleText: siteIdentity.nameAr,
     headerSubtitleText: `(${siteIdentity.demoLabel})`,
+    employeeCardTemplateUrl: null,
+    employeeCardLayout: mergeEmployeeCardLayout(null),
     isLoading: true,
   })
 
@@ -72,6 +77,10 @@ export function useSiteSettings(): ResolvedSiteBranding {
           accessibilityLinkHref: settings?.accessibility_link_href ?? null,
           headerTitleText: settings?.header_title_text || siteIdentity.nameAr,
           headerSubtitleText: settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`,
+          employeeCardTemplateUrl: getEmployeeCardTemplateUrl(
+            settings?.employee_card_template_path ?? null,
+          ),
+          employeeCardLayout: mergeEmployeeCardLayout(settings?.employee_card_layout),
           isLoading: false,
         })
       } catch {

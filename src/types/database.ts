@@ -59,6 +59,33 @@ export type NavLinkSetting = {
   href: string
 }
 
+export type EmployeeCardBox = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type EmployeeCardTextBox = EmployeeCardBox & {
+  fontSize: number
+  color: string
+  align: 'right' | 'left' | 'center'
+}
+
+export type EmployeeCardLayout = {
+  fullName: EmployeeCardTextBox
+  photo: EmployeeCardBox
+  qr: EmployeeCardBox
+  identityNumber: EmployeeCardTextBox
+  nationality: EmployeeCardTextBox
+  certificateNumber: EmployeeCardTextBox
+  profession: EmployeeCardTextBox
+  issueDate: EmployeeCardTextBox
+  expiryDate: EmployeeCardTextBox
+  educationProgramType: EmployeeCardTextBox
+  educationProgramExpiry: EmployeeCardTextBox
+}
+
 export type FooterBadgeSetting = {
   imagePath: string
   alt: string
@@ -77,6 +104,8 @@ export type SiteSettings = {
   accessibility_link_href: string | null
   header_title_text: string
   header_subtitle_text: string
+  employee_card_template_path: string | null
+  employee_card_layout: Partial<EmployeeCardLayout> | null
   updated_at: string
 }
 
@@ -93,6 +122,8 @@ export type SiteSettingsUpdate = Partial<
     | 'accessibility_link_href'
     | 'header_title_text'
     | 'header_subtitle_text'
+    | 'employee_card_template_path'
+    | 'employee_card_layout'
   >
 >
 

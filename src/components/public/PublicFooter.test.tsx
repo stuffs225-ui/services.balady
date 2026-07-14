@@ -58,6 +58,24 @@ describe('PublicFooter', () => {
     expect(plainImage.closest('a')).toBeNull()
   })
 
+  it('applies the admin-configured badge size to badge images and the footer logo mark', () => {
+    mockUseSiteSettings.mockReturnValue({
+      footerLinks: [],
+      footerBadges: [
+        { imageUrl: 'https://cdn.test/badge.png', alt: 'شارة', href: null },
+      ],
+      footerCopyrightText: defaultFooterCopyrightText,
+      footerSupportText: defaultFooterSupportText,
+      footerBadgeSize: 88,
+    })
+
+    render(<PublicFooter />)
+
+    expect(screen.getByAltText('شارة')).toHaveStyle({ height: '88px' })
+    const logoSvg = document.querySelector('svg[aria-label="شعار النظام التجريبي"]')
+    expect(logoSvg).toHaveAttribute('width', '88')
+  })
+
   it('follows content naturally (fixed margin-top, not pinned via mt-auto)', () => {
     mockUseSiteSettings.mockReturnValue({
       footerLinks: [],

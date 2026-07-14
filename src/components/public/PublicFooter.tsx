@@ -3,7 +3,13 @@ import Logo from '../brand/Logo'
 import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicFooter() {
-  const { footerLinks, footerBadges, footerCopyrightText, footerSupportText } = useSiteSettings()
+  const {
+    footerLinks,
+    footerBadges,
+    footerCopyrightText,
+    footerSupportText,
+    footerBadgeSize = 56,
+  } = useSiteSettings()
   const links = footerLinks.length ? footerLinks : defaultFooterLinks
   const copyrightText = footerCopyrightText.replace('{year}', String(new Date().getFullYear()))
 
@@ -24,11 +30,16 @@ function PublicFooter() {
         {footerSupportText}
       </p>
 
-      <div className="mt-9 flex flex-wrap justify-center gap-6">
-        <Logo variant="inverted" />
+      <div className="mt-9 flex flex-wrap items-center justify-center gap-6">
+        <Logo variant="inverted" size={footerBadgeSize} />
         {footerBadges.map((badge, index) => {
           const image = (
-            <img src={badge.imageUrl ?? undefined} alt={badge.alt} className="h-10 w-auto object-contain" />
+            <img
+              src={badge.imageUrl ?? undefined}
+              alt={badge.alt}
+              style={{ height: footerBadgeSize }}
+              className="w-auto object-contain"
+            />
           )
           return badge.href ? (
             <a key={index} href={badge.href} target="_blank" rel="noopener noreferrer">

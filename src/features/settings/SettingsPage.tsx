@@ -43,8 +43,8 @@ function SettingsPage() {
   const [footerSupportText, setFooterSupportText] = useState('')
   const [trustBannerText, setTrustBannerText] = useState('')
   const [accessibilityLinkHref, setAccessibilityLinkHref] = useState('')
-  const [headerTitleText, setHeaderTitleText] = useState('')
-  const [headerSubtitleText, setHeaderSubtitleText] = useState('')
+  const [logoSize, setLogoSize] = useState(96)
+  const [footerBadgeSize, setFooterBadgeSize] = useState(56)
 
   useEffect(() => {
     let cancelled = false
@@ -63,8 +63,8 @@ function SettingsPage() {
       setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
       setTrustBannerText(settings?.trust_banner_text || siteIdentity.demoDisclaimer)
       setAccessibilityLinkHref(settings?.accessibility_link_href ?? '')
-      setHeaderTitleText(settings?.header_title_text || siteIdentity.nameAr)
-      setHeaderSubtitleText(settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`)
+      setLogoSize(settings?.logo_size || 96)
+      setFooterBadgeSize(settings?.footer_badge_size || 56)
       setIsLoading(false)
     }
 
@@ -127,8 +127,8 @@ function SettingsPage() {
         footer_support_text: footerSupportText,
         trust_banner_text: trustBannerText,
         accessibility_link_href: accessibilityLinkHref || null,
-        header_title_text: headerTitleText,
-        header_subtitle_text: headerSubtitleText,
+        logo_size: logoSize,
+        footer_badge_size: footerBadgeSize,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -201,39 +201,62 @@ function SettingsPage() {
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">
-        <h2 className="mb-4 font-bold text-heading">عنوان الرأس (الهيدر)</h2>
-        <div className="mb-3">
-          <label className="mb-1 block text-sm font-bold text-text-primary">
-            اسم النظام (السطر الأول)
-          </label>
-          <input
-            value={headerTitleText}
-            onChange={(event) => setHeaderTitleText(event.target.value)}
-            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-bold text-text-primary">
-            النص الفرعي (السطر الثاني)
-          </label>
-          <input
-            value={headerSubtitleText}
-            onChange={(event) => setHeaderSubtitleText(event.target.value)}
-            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
-          />
-        </div>
-      </section>
-
-      <section className="mb-8 border-b border-divider pb-8">
         <h2 className="mb-4 font-bold text-heading">الشعار</h2>
-        <div className="flex items-center gap-4">
+        <div className="mb-4 flex items-center gap-4">
           {logoPreview ? (
-            <img src={logoPreview} alt="الشعار الحالي" className="h-16 w-16 object-contain" />
+            <img
+              src={logoPreview}
+              alt="الشعار الحالي"
+              style={{ width: logoSize, height: logoSize }}
+              className="object-contain"
+            />
           ) : (
-            <Logo />
+            <Logo size={logoSize} />
           )}
           <input type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" onChange={handleLogoChange} />
         </div>
+        <label className="mb-1 block text-sm font-bold text-text-primary">
+          حجم الشعار في أعلى الصفحة العامة: <span dir="ltr">{logoSize}px</span>
+        </label>
+        <input
+          type="range"
+          min={40}
+          max={200}
+          step={4}
+          value={logoSize}
+          onChange={(event) => setLogoSize(Number(event.target.value))}
+          className="w-full"
+        />
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">حجم بادجات الفوتر</h2>
+        <div className="mb-4 flex flex-wrap items-center gap-4 rounded-field border border-divider bg-footer-bg p-4">
+          <Logo variant="inverted" size={footerBadgeSize} />
+          {badges.map((badge, index) =>
+            badge.previewUrl ? (
+              <img
+                key={index}
+                src={badge.previewUrl}
+                alt=""
+                style={{ height: footerBadgeSize }}
+                className="w-auto object-contain"
+              />
+            ) : null,
+          )}
+        </div>
+        <label className="mb-1 block text-sm font-bold text-text-primary">
+          حجم شعار وبادجات الفوتر: <span dir="ltr">{footerBadgeSize}px</span>
+        </label>
+        <input
+          type="range"
+          min={24}
+          max={160}
+          step={4}
+          value={footerBadgeSize}
+          onChange={(event) => setFooterBadgeSize(Number(event.target.value))}
+          className="w-full"
+        />
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">

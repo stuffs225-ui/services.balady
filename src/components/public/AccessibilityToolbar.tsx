@@ -1,14 +1,69 @@
-function AccessibilityToolbar() {
+import { useState } from 'react'
+import { dateSettingOptions, type DatePreference } from '../../config/publicNavigation'
+
+type AccessibilityToolbarProps = {
+  datePreference: DatePreference | null
+  onDatePreferenceChange: (value: DatePreference) => void
+  isLargeText: boolean
+  onToggleLargeText: () => void
+}
+
+function AccessibilityToolbar({
+  datePreference,
+  onDatePreferenceChange,
+  isLargeText,
+  onToggleLargeText,
+}: AccessibilityToolbarProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
   return (
-    <div className="flex items-center justify-between border-b border-divider bg-surface px-6 py-4 sm:px-7">
-      <span className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base">
-        <SettingsIcon />
-        الإعدادات
-      </span>
-      <span className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base">
+    <div className="relative flex items-center justify-between border-b border-divider bg-surface px-6 py-4 print:hidden sm:px-7">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen((prev) => !prev)}
+          aria-expanded={isSettingsOpen}
+          aria-controls="public-settings-menu"
+          className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base"
+        >
+          <SettingsIcon />
+          الإعدادات
+        </button>
+
+        {isSettingsOpen && (
+          <ul
+            id="public-settings-menu"
+            className="absolute top-full right-0 z-10 mt-2 w-56 rounded-field border border-divider bg-surface py-1 text-sm shadow-sm"
+          >
+            {dateSettingOptions.map((option) => (
+              <li key={option.value}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDatePreferenceChange(option.value)
+                    setIsSettingsOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between px-4 py-2 text-right hover:bg-surface-muted ${
+                    datePreference === option.value ? 'font-bold text-brand-primary' : ''
+                  }`}
+                >
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={onToggleLargeText}
+        aria-pressed={isLargeText}
+        className="flex items-center gap-2 text-[15px] font-medium text-text-primary sm:text-base"
+      >
         أدوات سهولة الوصول
         <AccessibilityIcon />
-      </span>
+      </button>
     </div>
   )
 }

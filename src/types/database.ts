@@ -54,6 +54,30 @@ export type PublicCertificate = {
   status: CertificateStatus
 }
 
+export type NavLinkSetting = {
+  label: string
+  href: string
+}
+
+export type FooterBadgeSetting = {
+  imagePath: string
+  alt: string
+  href: string | null
+}
+
+export type SiteSettings = {
+  id: string
+  logo_path: string | null
+  nav_links: NavLinkSetting[]
+  footer_links: NavLinkSetting[]
+  footer_badges: FooterBadgeSetting[]
+  updated_at: string
+}
+
+export type SiteSettingsUpdate = Partial<
+  Pick<SiteSettings, 'logo_path' | 'nav_links' | 'footer_links' | 'footer_badges'>
+>
+
 export type Database = {
   public: {
     Tables: {
@@ -61,6 +85,12 @@ export type Database = {
         Row: Employee
         Insert: EmployeeInsert
         Update: EmployeeUpdate
+        Relationships: []
+      }
+      site_settings: {
+        Row: SiteSettings
+        Insert: never
+        Update: SiteSettingsUpdate
         Relationships: []
       }
     }

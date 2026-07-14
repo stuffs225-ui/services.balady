@@ -1,11 +1,15 @@
-import { footerLinks } from '../../config/siteLinks'
+import { footerLinks as defaultFooterLinks } from '../../config/siteLinks'
 import Logo from '../brand/Logo'
+import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicFooter() {
+  const { footerLinks, footerBadges } = useSiteSettings()
+  const links = footerLinks.length ? footerLinks : defaultFooterLinks
+
   return (
-    <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text sm:pt-14 sm:pb-[60px]">
+    <footer className="mt-auto bg-footer-bg px-7 pt-11 pb-12 text-center text-footer-text print:hidden sm:pt-14 sm:pb-[60px]">
       <ul className="flex flex-wrap justify-center gap-[22px] sm:gap-[34px]">
-        {footerLinks.map((link) => (
+        {links.map((link) => (
           <li key={link.href}>
             <a href={link.href} className="text-base underline underline-offset-4 sm:text-lg">
               {link.label}
@@ -21,8 +25,20 @@ function PublicFooter() {
         تم تطوير وتشغيل النسخة التجريبية لأغراض العرض
       </p>
 
-      <div className="mt-9 flex justify-center sm:mt-11">
+      <div className="mt-9 flex flex-wrap justify-center gap-6 sm:mt-11">
         <Logo variant="inverted" />
+        {footerBadges.map((badge, index) => {
+          const image = (
+            <img src={badge.imageUrl ?? undefined} alt={badge.alt} className="h-10 w-auto object-contain" />
+          )
+          return badge.href ? (
+            <a key={index} href={badge.href} target="_blank" rel="noopener noreferrer">
+              {image}
+            </a>
+          ) : (
+            <span key={index}>{image}</span>
+          )
+        })}
       </div>
     </footer>
   )

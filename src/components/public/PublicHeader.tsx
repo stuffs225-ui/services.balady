@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import Logo from '../brand/Logo'
 import { siteIdentity } from '../../config/siteLinks'
 import MobileNavigation from './MobileNavigation'
+import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicHeader() {
   const [isOpen, setIsOpen] = useState(false)
+  const { logoUrl, navLinks } = useSiteSettings()
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -15,10 +17,14 @@ function PublicHeader() {
   }, [])
 
   return (
-    <header className="bg-surface">
+    <header className="bg-surface print:hidden">
       <div className="flex items-center justify-between px-6 py-6 sm:px-7">
         <div className="flex items-center gap-3">
-          <Logo />
+          {logoUrl ? (
+            <img src={logoUrl} alt={siteIdentity.nameAr} className="h-10 w-10 object-contain" />
+          ) : (
+            <Logo />
+          )}
           <div className="text-right">
             <p className="text-sm font-bold text-heading sm:text-base">{siteIdentity.nameAr}</p>
             <p className="text-xs font-medium text-brand-primary sm:text-sm">
@@ -39,7 +45,7 @@ function PublicHeader() {
         </button>
       </div>
 
-      <MobileNavigation isOpen={isOpen} />
+      <MobileNavigation isOpen={isOpen} navLinks={navLinks} />
 
       <div className="border-t border-divider" />
     </header>

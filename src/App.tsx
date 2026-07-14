@@ -10,6 +10,7 @@ import EditEmployeePage from './features/employees/EditEmployeePage'
 import EmployeeDetailsPage from './features/employees/EmployeeDetailsPage'
 import PrintEmployeePage from './features/employees/PrintEmployeePage'
 import PublicEmployeePage from './features/public/PublicEmployeePage'
+import SettingsPage from './features/settings/SettingsPage'
 import NotFoundPage from './features/misc/NotFoundPage'
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/employees/new" element={<NewEmployeePage />} />
             <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
             <Route path="/employees/:id" element={<EmployeeDetailsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="/employees/:id/print" element={<PrintEmployeePage />} />
         </Route>

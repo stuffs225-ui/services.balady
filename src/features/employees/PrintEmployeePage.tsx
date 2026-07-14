@@ -6,6 +6,7 @@ import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl } from '../../lib/qrcode'
 import Logo from '../../components/brand/Logo'
 import { siteIdentity } from '../../config/siteLinks'
+import EmployeeCertificateCard from './EmployeeCertificateCard'
 
 function PrintEmployeePage() {
   const { id } = useParams<{ id: string }>()
@@ -58,48 +59,14 @@ function PrintEmployeePage() {
         </button>
       </div>
 
-      <div className="mx-auto max-w-2xl rounded-field border border-divider bg-surface p-8 print:border-0 print:p-0 print:shadow-none">
-        <div className="mb-6 flex flex-col items-center gap-2 border-b border-divider pb-6 text-center">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-4 flex flex-col items-center gap-1 text-center print:hidden">
           <Logo />
-          <h1 className="text-lg font-bold text-heading">{siteIdentity.nameAr}</h1>
-          <p className="text-sm font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
+          <p className="text-sm font-bold text-heading">{siteIdentity.nameAr}</p>
+          <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
         </div>
 
-        <div className="mb-6 flex flex-col items-center gap-3">
-          {photoUrl && (
-            <img src={photoUrl} alt={employee.employee_name} className="h-36 w-36 rounded-field object-cover" />
-          )}
-          <p className="text-xl font-bold text-heading">{employee.employee_name}</p>
-        </div>
-
-        <dl className="mb-6 grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt className="font-bold text-text-primary">رقم الشهادة الصحية</dt>
-            <dd className="text-text-secondary">{employee.certificate_number}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-text-primary">المهنة</dt>
-            <dd className="text-text-secondary">{employee.profession}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-text-primary">اسم المنشأة</dt>
-            <dd className="text-text-secondary">{employee.establishment_name}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-text-primary">تاريخ الإصدار</dt>
-            <dd className="text-text-secondary">{employee.issue_date_gregorian}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-text-primary">تاريخ الانتهاء</dt>
-            <dd className="text-text-secondary">{employee.expiry_date_gregorian}</dd>
-          </div>
-        </dl>
-
-        {qrDataUrl && (
-          <div className="flex justify-center border-t border-divider pt-6">
-            <img src={qrDataUrl} alt="رمز الاستجابة السريعة" className="h-32 w-32" />
-          </div>
-        )}
+        <EmployeeCertificateCard employee={employee} photoUrl={photoUrl} qrDataUrl={qrDataUrl} />
       </div>
     </div>
   )

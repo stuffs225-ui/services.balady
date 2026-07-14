@@ -26,6 +26,9 @@
   --color-expired: #b42318;
   --color-revoked: #7a1f1f;
 
+  --color-certificate-heading: #1b6b6e;
+  --color-certificate-border: #a3a06b;
+
   --radius-field: 4px;
   --radius-button: 4px;
   --radius-small: 3px;

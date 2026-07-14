@@ -27,53 +27,75 @@ type EmployeeCertificateCardProps = {
   qrDataUrl: string | null
 }
 
+/**
+ * Matches the field layout of the reference "unified health certificate"
+ * card (ID-card sized, two-column field grid, photo+QR in a side column),
+ * but with the app's own neutral demo branding instead of any real
+ * government logo/seal.
+ */
 function EmployeeCertificateCard({ employee, photoUrl, qrDataUrl }: EmployeeCertificateCardProps) {
   const fields = buildFields(employee)
 
   return (
     <div
       dir="rtl"
-      className="rounded-field border-2 border-certificate-border p-6"
-      style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f7f9fb 100%)' }}
+      className="relative flex flex-col justify-between overflow-hidden rounded-field border border-certificate-border bg-white p-[3mm] print:rounded-none"
+      style={{ width: '85.6mm', height: '54mm' }}
     >
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Logo className="h-6 w-6 shrink-0" />
-          <div>
-            <h2 className="text-2xl font-bold text-certificate-heading sm:text-3xl">
-              {employee.employee_name}
-            </h2>
-            <p className="text-xs font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
-          </div>
+      <div className="flex items-start justify-between gap-[2mm]">
+        <div className="text-right">
+          <p className="text-[7px] leading-tight font-bold text-certificate-heading">
+            الشهادة الصحية الموحدة
+          </p>
+          <p className="text-[5.5px] font-medium text-brand-primary">({siteIdentity.demoLabel})</p>
         </div>
-
-        {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={employee.employee_name}
-            className="h-32 w-32 shrink-0 rounded-sm border-2 border-certificate-border object-cover"
-          />
-        ) : (
-          <div className="h-32 w-32 shrink-0 rounded-sm border-2 border-certificate-border bg-surface-muted" />
-        )}
+        <Logo className="h-[6mm] w-[6mm] shrink-0" />
       </div>
 
-      <div className="flex items-start gap-6">
-        <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-4">
+      <p className="truncate text-[10px] font-bold text-certificate-heading">
+        {employee.employee_name}
+      </p>
+
+      <div className="flex flex-1 gap-[2mm]">
+        <div className="grid flex-1 grid-cols-2 content-start gap-x-[2mm] gap-y-[1.3mm]">
           {fields.map((field) => (
             <div key={field.label}>
-              <p className="mb-1 text-sm font-bold text-text-primary">{field.label}</p>
-              <p dir={field.dir ?? 'rtl'} className="text-sm text-text-secondary">
+              <p className="certificate-field-label text-[5px] leading-tight font-bold text-text-primary">
+                {field.label}
+              </p>
+              <p dir={field.dir ?? 'rtl'} className="truncate text-[6px] leading-tight text-field-value">
                 {field.value || '—'}
               </p>
             </div>
           ))}
         </div>
 
-        {qrDataUrl && (
-          <img src={qrDataUrl} alt="رمز الاستجابة السريعة" className="h-28 w-28 shrink-0" />
-        )}
+        <div className="flex w-[16mm] shrink-0 flex-col gap-[1.5mm]">
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={employee.employee_name}
+              className="h-[16mm] w-[16mm] rounded-sm border border-certificate-border object-cover"
+            />
+          ) : (
+            <div className="h-[16mm] w-[16mm] rounded-sm border border-certificate-border bg-field-bg" />
+          )}
+
+          {qrDataUrl ? (
+            <img
+              src={qrDataUrl}
+              alt="رمز الاستجابة السريعة"
+              className="h-[13mm] w-[13mm] border border-certificate-border object-contain"
+            />
+          ) : (
+            <div className="h-[13mm] w-[13mm] border border-certificate-border bg-field-bg" />
+          )}
+        </div>
       </div>
+
+      <p className="border-t border-certificate-border pt-[0.8mm] text-center text-[5px] text-text-secondary">
+        {siteIdentity.demoDisclaimer}
+      </p>
     </div>
   )
 }

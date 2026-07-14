@@ -37,7 +37,9 @@ describe('EmployeeCertificateCard', () => {
 
     expect(screen.getByText('موظف تجريبي')).toBeInTheDocument()
 
-    const labels = Array.from(container.querySelectorAll('p.font-bold')).map((el) => el.textContent)
+    const labels = Array.from(container.querySelectorAll('.certificate-field-label')).map(
+      (el) => el.textContent,
+    )
     expect(labels).toEqual([
       'رقم الهوية',
       'الجنسية',

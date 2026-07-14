@@ -112,6 +112,22 @@ false`; the public page then shows a "ملغاة" (revoked) status instead of
 serving normal certificate data as valid, and the employee's photo becomes
 unreadable to anonymous visitors.
 
+### Editing branding and links (الإعدادات)
+
+Go to **الإعدادات** from the admin header (`/settings`) to change, without a
+code deploy:
+
+- the logo shown on the login page, admin header, and public page
+- the main navigation links (label + URL, add/remove any number)
+- the footer links
+- footer logos/badges (upload an image, optional link, optional alt text)
+
+These are stored in the `site_settings` table and a public `branding-assets`
+storage bucket (public by design — logos must render for every visitor with
+no auth). Only authenticated admins can write to either; everyone can read.
+Until you save your own values, the app falls back to the defaults in
+`src/config/siteLinks.ts`.
+
 ## Testing
 
 ```bash

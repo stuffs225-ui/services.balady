@@ -1,10 +1,12 @@
-import { navLinks, primaryActionLink, searchLink } from '../../config/siteLinks'
+import { navLinks as defaultNavLinks, primaryActionLink, searchLink } from '../../config/siteLinks'
+import type { NavLinkSetting } from '../../types/database'
 
 type MobileNavigationProps = {
   isOpen: boolean
+  navLinks?: NavLinkSetting[]
 }
 
-function MobileNavigation({ isOpen }: MobileNavigationProps) {
+function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigationProps) {
   return (
     <nav
       id="public-mobile-navigation"

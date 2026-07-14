@@ -5,7 +5,7 @@ import type { PublicCertificate } from '../../types/database'
 
 const certificate: PublicCertificate = {
   employee_name: 'أحمد محمد التجريبي',
-  identity_number_masked: '*******609',
+  identity_number: '*******609',
   gender: 'ذكر',
   nationality: 'الجنسية التجريبية',
   profession: 'محاسب',

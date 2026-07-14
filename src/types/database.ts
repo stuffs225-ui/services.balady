@@ -34,7 +34,7 @@ export type CertificateStatus = 'active' | 'expired' | 'revoked'
 
 export type PublicCertificate = {
   employee_name: string
-  identity_number_masked: string
+  identity_number: string
   gender: string
   nationality: string
   profession: string

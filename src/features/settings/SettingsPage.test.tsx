@@ -241,6 +241,34 @@ describe('SettingsPage', () => {
     ])
   })
 
+  it('keeps a section with no title as long as it has at least one link (a flat, un-headed dropdown list)', async () => {
+    renderSettingsPage()
+    const label = await screen.findByDisplayValue('عن النظام')
+    const navSection = label.closest('section')!
+
+    await userEvent.click(
+      within(navSection).getByRole('button', {
+        name: 'تحويل لقائمة منسدلة (تظهر عند الضغط بدل الانتقال لرابط)',
+      }),
+    )
+    // Section title is deliberately left blank.
+    await userEvent.click(within(navSection).getByRole('button', { name: 'إضافة رابط للقسم' }))
+    await userEvent.type(within(navSection).getByPlaceholderText('نص الرابط'), 'اتصل بنا')
+    await userEvent.type(within(navSection).getByPlaceholderText('الرابط'), '/contact-us')
+
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.nav_links).toEqual([
+      {
+        label: 'عن النظام',
+        href: '/about',
+        sections: [{ title: '', links: [{ label: 'اتصل بنا', href: '/contact-us' }] }],
+      },
+    ])
+  })
+
   it('converts a dropdown nav item back to a plain link', async () => {
     mockGetSiteSettings.mockResolvedValue({
       id: '00000000-0000-0000-0000-000000000001',

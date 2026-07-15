@@ -22,7 +22,10 @@ type BadgeDraft = {
 /**
  * Drops blank sections/sub-links before saving, and keeps a nav link only
  * if it has a label plus either a direct href or at least one populated
- * dropdown section — a dropdown-style item never needs its own href.
+ * dropdown section — a dropdown-style item never needs its own href. A
+ * section's title is optional (some dropdowns show a single flat list of
+ * links with no sub-heading), so a section is kept as long as it has at
+ * least one populated link, titled or not.
  */
 function cleanNavLinks(links: NavLinkSetting[]): NavLinkSetting[] {
   return links
@@ -34,7 +37,7 @@ function cleanNavLinks(links: NavLinkSetting[]): NavLinkSetting[] {
             .map((sectionLink) => ({ label: sectionLink.label.trim(), href: sectionLink.href.trim() }))
             .filter((sectionLink) => sectionLink.label && sectionLink.href),
         }))
-        .filter((section) => section.title && section.links.length > 0)
+        .filter((section) => section.links.length > 0)
 
       return {
         label: link.label.trim(),

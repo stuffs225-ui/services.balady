@@ -32,6 +32,27 @@ describe('EmployeeForm', () => {
   })
 
 
+  it('keeps the default field order when prioritizeManualEntry is not set', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+    const labels = screen.getAllByText(/^(الأمانة|رقم الشهادة الصحية|اسم المنشأة)$/).map((el) => el.textContent)
+    // Default order: certificateNumber comes before establishmentName.
+    expect(labels.indexOf('رقم الشهادة الصحية')).toBeLessThan(labels.indexOf('اسم المنشأة'))
+  })
+
+  it('moves fields the admin must type to the top when prioritizeManualEntry is set, auto-filled ones last', () => {
+    render(
+      <EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} prioritizeManualEntry />,
+    )
+    const labels = screen
+      .getAllByText(/^(الأمانة|رقم الشهادة الصحية|اسم المنشأة|رقم الرخصة)$/)
+      .map((el) => el.textContent)
+    // establishmentName/authorityName (typed manually) must come before
+    // certificateNumber/licenseNumber (auto-filled on the new-employee form).
+    expect(labels.indexOf('الأمانة')).toBeLessThan(labels.indexOf('رقم الشهادة الصحية'))
+    expect(labels.indexOf('اسم المنشأة')).toBeLessThan(labels.indexOf('رقم الشهادة الصحية'))
+    expect(labels.indexOf('اسم المنشأة')).toBeLessThan(labels.indexOf('رقم الرخصة'))
+  })
+
   it('auto-fills the Hijri issue date when the Gregorian issue date changes', () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

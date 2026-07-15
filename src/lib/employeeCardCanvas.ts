@@ -234,13 +234,12 @@ function drawTextField(ctx: CanvasRenderingContext2D, options: DrawTextFieldOpti
   let textAlign: CanvasTextAlign
 
   if (isFullName) {
-    // The full-name field auto-fits and is always anchored physically
-    // right — the on-screen/PDF renderer's AutoFitText wrapper always
-    // spans 100% of the box width, so the outer box's align setting has
-    // no visible effect there; only its own hardcoded right alignment
-    // does. Mirrored here exactly, independent of box.align.
-    const fontSize = fitFontSize(ctx, displayValue, box.fontSize * scale, contentWidth)
-    ctx.font = `${fontSize}px ${FONT_STACK}`
+    // The full-name field always renders at its exact configured font
+    // size — no shrink-to-fit — mirroring the DOM renderer's AutoFitText
+    // exactly. It's always anchored physically right regardless of
+    // box.align, same as the DOM version (its wrapper spans 100% of the
+    // box width there too, so the outer align setting has no effect).
+    ctx.font = `${box.fontSize * scale}px ${FONT_STACK}`
     text = displayValue
     anchorX = contentRight
     textAlign = 'right'
@@ -272,24 +271,6 @@ function drawTextField(ctx: CanvasRenderingContext2D, options: DrawTextFieldOpti
   ctx.textAlign = textAlign
   ctx.fillText(text, anchorX, centerY)
   ctx.restore()
-}
-
-/** Mirrors AutoFitText's shrink-to-fit loop (same 1px steps, 40% floor, 40-iteration cap). */
-function fitFontSize(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  fontSize: number,
-  maxWidth: number,
-): number {
-  let size = fontSize
-  ctx.font = `${size}px ${FONT_STACK}`
-  let guard = 0
-  while (ctx.measureText(text).width > maxWidth && size > fontSize * 0.4 && guard < 40) {
-    size -= 1
-    ctx.font = `${size}px ${FONT_STACK}`
-    guard += 1
-  }
-  return size
 }
 
 /** Mirrors the DOM version's overflow:hidden + text-overflow:ellipsis for non-fullName fields. */

@@ -82,6 +82,28 @@ const FIELDS: FieldConfig[] = [
   { name: 'establishmentNumber', label: 'رقم المنشأة', type: 'text' },
 ]
 
+/** Fields NewEmployeePage pre-fills automatically when the form is opened (see buildDefaultValues). */
+const AUTO_FILLED_ON_CREATE = new Set<TextFieldName>([
+  'certificateNumber',
+  'issueDateHijri',
+  'issueDateGregorian',
+  'expiryDateHijri',
+  'expiryDateGregorian',
+  'programCompletionDateHijri',
+  'licenseNumber',
+])
+
+/**
+ * Same fields as FIELDS, reordered so the ones the admin must type appear
+ * first and the auto-filled ones trail at the end — purely a data-entry
+ * convenience for the new-employee form. Every other page (edit form,
+ * details page, card, public page) keeps the original FIELDS order.
+ */
+const FIELDS_FOR_QUICK_ENTRY: FieldConfig[] = [
+  ...FIELDS.filter((field) => !AUTO_FILLED_ON_CREATE.has(field.name)),
+  ...FIELDS.filter((field) => AUTO_FILLED_ON_CREATE.has(field.name)),
+]
+
 function directionFor(field: FieldConfig): 'rtl' | 'ltr' {
   if (field.type === 'dateOnly') return 'ltr'
   return RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : 'ltr'
@@ -186,6 +208,8 @@ type EmployeeFormProps = {
   submitLabel: string
   onSubmit: (values: EmployeeFormValues) => void | Promise<void>
   formError?: string | null
+  /** New-employee registration only: lists fields the admin must type first, auto-filled ones last. */
+  prioritizeManualEntry?: boolean
 }
 
 function EmployeeForm({
@@ -195,7 +219,9 @@ function EmployeeForm({
   submitLabel,
   onSubmit,
   formError,
+  prioritizeManualEntry,
 }: EmployeeFormProps) {
+  const fieldsToRender = prioritizeManualEntry ? FIELDS_FOR_QUICK_ENTRY : FIELDS
   const [photoPreview, setPhotoPreview] = useState<string | null>(existingPhotoUrl ?? null)
   const [fieldSuggestions, setFieldSuggestions] = useState<
     Partial<Record<EmployeeSuggestionField, string[]>>
@@ -367,7 +393,7 @@ function EmployeeForm({
         />
       )}
 
-      {FIELDS.map((field) => {
+      {fieldsToRender.map((field) => {
         const dir = directionFor(field)
 
         return (

@@ -31,6 +31,12 @@ export function gregorianToHijri(gregorianISO: string): string {
   return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`
 }
 
+/** Displays a stored "YYYY-MM-DD" Gregorian date as "YYYY/MM/DD". */
+export function formatGregorianDisplay(iso: string | null | undefined): string {
+  if (!iso) return ''
+  return iso.replaceAll('-', '/')
+}
+
 function toISODate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')

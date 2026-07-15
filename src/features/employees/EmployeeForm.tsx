@@ -70,8 +70,12 @@ const FIELDS: FieldConfig[] = [
   { name: 'establishmentNumber', label: 'رقم المنشأة', type: 'text' },
 ]
 
-function directionFor(field: FieldConfig): 'rtl' | 'ltr' | undefined {
-  if (field.type === 'date') return undefined
+function directionFor(field: FieldConfig): 'rtl' | 'ltr' {
+  // Native date inputs must be forced to ltr even on this rtl-wide page:
+  // left un-set, Safari/WebKit visually reorders the day/month/year
+  // segments to follow the inherited rtl context, which is how a value
+  // like 2037-07-15 ends up rendered as something like "Jul 2037 15".
+  if (field.type === 'date') return 'ltr'
   return RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : 'ltr'
 }
 
@@ -249,7 +253,7 @@ function EmployeeForm({
                   id={field.name}
                   type={field.type}
                   dir={dir}
-                  style={field.type === 'date' ? undefined : { direction: dir, textAlign: 'right' }}
+                  style={{ direction: dir, textAlign: field.type === 'date' ? 'left' : 'right' }}
                   list={SUGGESTABLE_FIELDS.has(field.name) ? `${field.name}-suggestions` : undefined}
                   {...register(
                     field.name,

@@ -22,15 +22,21 @@ describe('ReadOnlyField', () => {
     expect(screen.getByText('تاريخ إصدار الشهادة الصحية هجري').className).toContain('text-[15px]')
   })
 
-  it('right-aligns values regardless of dir (never left-aligns)', () => {
+  it('right-aligns values regardless of dir, using a block element (never flex/justify-end)', () => {
     const { rerender } = render(<ReadOnlyField label="الجنس" value="ذكر" dir="rtl" />)
-    expect(screen.getByText('ذكر').className).toContain('justify-end')
-    expect(screen.getByText('ذكر').className).not.toContain('justify-start')
+    const rtlValue = screen.getByText('ذكر')
+    expect(rtlValue.className).toContain('block')
+    expect(rtlValue.className).not.toMatch(/\bflex\b/)
+    expect(rtlValue.className).not.toContain('justify-end')
+    expect(rtlValue.style.textAlign).toBe('right')
+    expect(rtlValue).toHaveAttribute('data-kind', 'text')
 
     rerender(<ReadOnlyField label="رقم الهوية" value="1234567890" dir="ltr" />)
     const numericValue = screen.getByText('1234567890')
-    expect(numericValue.className).toContain('justify-end')
-    expect(numericValue.className).not.toContain('justify-start')
+    expect(numericValue.className).toContain('block')
+    expect(numericValue.className).not.toMatch(/\bflex\b/)
+    expect(numericValue.style.textAlign).toBe('right')
+    expect(numericValue).toHaveAttribute('data-kind', 'number')
   })
 
   it('shows a simple dash for missing values', () => {

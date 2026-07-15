@@ -93,6 +93,18 @@ describe('EmployeeForm', () => {
     ).toBe('1448/01/15')
   })
 
+  it('sets the direction/alignment as inline CSS too, not just the dir attribute', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const nameInput = screen.getByLabelText('الاسم')
+    expect(nameInput).toHaveAttribute('dir', 'rtl')
+    expect(nameInput.style.direction).toBe('rtl')
+    expect(nameInput.style.textAlign).toBe('right')
+
+    const idInput = screen.getByLabelText('رقم الهوية')
+    expect(idInput.style.direction).toBe('ltr')
+  })
+
   it('offers previously used values as a pick-list for repeatable fields', async () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

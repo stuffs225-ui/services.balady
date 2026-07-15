@@ -94,4 +94,60 @@ describe('MobileNavigation dropdown sections', () => {
     // nothing inside it.
     expect(screen.queryByRole('button', { name: /الخدمات/ })).not.toBeInTheDocument()
   })
+
+  it('renders a section with no title as a flat list, with no empty heading', async () => {
+    render(
+      <MobileNavigation
+        isOpen
+        navLinks={[
+          {
+            label: 'المساعدة والدعم',
+            href: '',
+            sections: [
+              {
+                title: '',
+                links: [{ label: 'اتصل بنا', href: '/contact-us' }],
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /المساعدة والدعم/ }))
+
+    expect(screen.getByRole('link', { name: 'اتصل بنا' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument()
+  })
+
+  it('marks an absolute (external) sub-link with an external-link icon, but not a relative one', async () => {
+    render(
+      <MobileNavigation
+        isOpen
+        navLinks={[
+          {
+            label: 'المساعدة والدعم',
+            href: '',
+            sections: [
+              {
+                title: '',
+                links: [
+                  { label: 'الإبلاغ عن شبهة فساد', href: 'https://example.com/report' },
+                  { label: 'اتصل بنا', href: '/contact-us' },
+                ],
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /المساعدة والدعم/ }))
+
+    const externalLink = screen.getByRole('link', { name: /الإبلاغ عن شبهة فساد/ })
+    expect(externalLink.querySelector('svg')).toBeInTheDocument()
+
+    const internalLink = screen.getByRole('link', { name: 'اتصل بنا' })
+    expect(internalLink.querySelector('svg')).not.toBeInTheDocument()
+  })
 })

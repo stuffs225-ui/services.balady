@@ -64,17 +64,20 @@ function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigati
                 <div className="border-t-2 border-text-primary bg-surface-muted/40 px-7 py-6">
                   {link.sections!.map((section, sectionIndex) => (
                     <div key={sectionIndex} className="mb-6 last:mb-0">
-                      <h3 className="mb-3 text-xl font-bold text-brand-primary sm:text-2xl">
-                        {section.title}
-                      </h3>
+                      {section.title && (
+                        <h3 className="mb-3 text-xl font-bold text-brand-primary sm:text-2xl">
+                          {section.title}
+                        </h3>
+                      )}
                       <ul>
                         {section.links.map((sectionLink, linkIndex) => (
                           <li key={linkIndex} className="mb-3 last:mb-0">
                             <a
                               href={sectionLink.href}
-                              className="block text-lg text-text-primary hover:underline sm:text-xl"
+                              className="flex items-center gap-1.5 text-lg text-text-primary hover:underline sm:text-xl"
                             >
                               {sectionLink.label}
+                              {isExternalHref(sectionLink.href) && <ExternalLinkIcon />}
                             </a>
                           </li>
                         ))}
@@ -131,6 +134,25 @@ function ChevronIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M15 6l-6 6 6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Absolute (http/https) links open outside the app, same as the reference design's marked-external items. */
+function isExternalHref(href: string): boolean {
+  return /^https?:\/\//i.test(href)
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+      <path
+        d="M9 6h9v9M18 6L7 17"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"

@@ -76,7 +76,6 @@ function PublicEmployeePage() {
                 photoUrl={result.photoUrl}
                 employeeName={result.certificate.employee_name}
                 photoCrop={result.certificate.employee_photo_crop}
-                token={token}
               />
               <CertificateFieldList
                 certificate={result.certificate}

@@ -1,16 +1,7 @@
 import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
 import type { PublicCertificate } from '../../types/database'
 
-// Long enough that a QR-scanner in-app preview (which can sit open for
-// several minutes) never sees the URL expire mid-view.
-const PHOTO_SIGNED_URL_TTL_SECONDS = 15 * 60
-
-// Some in-app mini-browsers (Snapchat, Instagram, etc.) don't reliably
-// support decoding an off-DOM image — it can hang or reject there even
-// though the exact same URL renders fine as a normal <img>. Cap the wait
-// so those browsers are never blocked on a preload step that will never
-// finish.
-const PHOTO_PRELOAD_TIMEOUT_MS = 3000
+const PHOTO_SIGNED_URL_TTL_SECONDS = 60
 
 export type PublicCertificateResult =
   | { kind: 'found'; certificate: PublicCertificate; photoUrl: string | null }
@@ -24,31 +15,28 @@ async function requestSignedPhotoUrl(token: string): Promise<string | null> {
   return data?.signedUrl ?? null
 }
 
-// Best-effort warm-up: decodes the image off-screen so well-behaved
-// browsers can skip the loading flash. The URL is always returned
-// regardless of whether the decode succeeds — a failed or timed-out
-// decode must never hide a photo that the real <img> tag could still
-// load normally.
-async function preloadPhoto(url: string): Promise<string> {
-  await Promise.race([
-    (async () => {
-      try {
-        const img = new Image()
-        img.src = url
-        await img.decode()
-      } catch {
-        // Ignore — the real <img> tag still gets a normal chance to load it.
-      }
-    })(),
-    new Promise<void>((resolve) => setTimeout(resolve, PHOTO_PRELOAD_TIMEOUT_MS)),
-  ])
-  return url
-}
-
-/** Requests a fresh signed URL and preloads it — used to retry after a failed/expired photo load. */
-export async function refreshPhotoUrl(token: string): Promise<string | null> {
-  const url = await requestSignedPhotoUrl(token)
-  return url ? preloadPhoto(url) : null
+// Fetches the photo's bytes ourselves and embeds them directly as a
+// base64 data URL, instead of handing the page a remote URL for the
+// browser to fetch/decode on its own. Some in-app mini-browsers
+// (Snapchat, Instagram, etc.) are unreliable at loading a remote <img src>
+// even when the exact same URL works fine elsewhere. A data URL has no
+// follow-up network request at all — it's part of the page's own data by
+// the time the page renders, so there's nothing left for the browser to
+// get wrong.
+async function fetchPhotoAsDataUrl(signedUrl: string): Promise<string | null> {
+  try {
+    const response = await fetch(signedUrl)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
 }
 
 export async function fetchPublicCertificate(token: string): Promise<PublicCertificateResult> {
@@ -75,7 +63,7 @@ export async function fetchPublicCertificate(token: string): Promise<PublicCerti
     status: (raw.status as string) === 'expiring' ? 'active' : raw.status,
   }
 
-  const photoUrl = raw.has_photo && signedUrl ? await preloadPhoto(signedUrl) : null
+  const photoUrl = raw.has_photo && signedUrl ? await fetchPhotoAsDataUrl(signedUrl) : null
 
   return { kind: 'found', certificate, photoUrl }
 }

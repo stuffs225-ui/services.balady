@@ -53,6 +53,18 @@ describe('EmployeeForm', () => {
     expect(hijriInput.value).toBe('1449/01/25')
   })
 
+  it('auto-fills the program completion Hijri date as issue date + 1095 days when the issue date changes', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const input = screen.getByLabelText('تاريخ إصدار الشهادة الصحية ميلادي') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '2026-06-30' } })
+
+    const programCompletionInput = screen.getByLabelText(
+      'تاريخ انتهاء البرنامج التثقيفي',
+    ) as HTMLInputElement
+    expect(programCompletionInput.value).toBe('1451/02/17')
+  })
+
   it('still allows the Hijri field to be edited manually after auto-fill', () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

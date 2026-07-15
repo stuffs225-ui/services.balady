@@ -1,13 +1,48 @@
 import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
 import type { PublicCertificate } from '../../types/database'
 
+// Long enough that a QR-scanner in-app preview (which can sit open for
+// several minutes) never sees the URL expire mid-view.
+const PHOTO_SIGNED_URL_TTL_SECONDS = 15 * 60
+
 export type PublicCertificateResult =
   | { kind: 'found'; certificate: PublicCertificate; photoUrl: string | null }
   | { kind: 'not-found' }
   | { kind: 'network-error' }
 
+async function requestSignedPhotoUrl(token: string): Promise<string | null> {
+  const { data } = await supabase.storage
+    .from(EMPLOYEE_PHOTOS_BUCKET)
+    .createSignedUrl(`${token}/photo`, PHOTO_SIGNED_URL_TTL_SECONDS)
+  return data?.signedUrl ?? null
+}
+
+// Decodes the image off-screen so the browser never has to paint a blank
+// frame before swapping the loading state for the real photo.
+async function preloadPhoto(url: string): Promise<string | null> {
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    return url
+  } catch {
+    return null
+  }
+}
+
+/** Requests a fresh signed URL and preloads it — used to retry after a failed/expired photo load. */
+export async function refreshPhotoUrl(token: string): Promise<string | null> {
+  const url = await requestSignedPhotoUrl(token)
+  return url ? preloadPhoto(url) : null
+}
+
 export async function fetchPublicCertificate(token: string): Promise<PublicCertificateResult> {
-  const { data, error } = await supabase.rpc('verify_certificate', { p_token: token })
+  // The photo's storage path is derived from the token alone, so it can be
+  // requested in parallel with the RPC instead of waiting for it to resolve.
+  const [{ data, error }, signedUrl] = await Promise.all([
+    supabase.rpc('verify_certificate', { p_token: token }),
+    requestSignedPhotoUrl(token),
+  ])
 
   if (error) {
     return { kind: 'network-error' }
@@ -25,13 +60,7 @@ export async function fetchPublicCertificate(token: string): Promise<PublicCerti
     status: (raw.status as string) === 'expiring' ? 'active' : raw.status,
   }
 
-  let photoUrl: string | null = null
-  if (raw.has_photo) {
-    const { data: signed } = await supabase.storage
-      .from(EMPLOYEE_PHOTOS_BUCKET)
-      .createSignedUrl(`${token}/photo`, 60)
-    photoUrl = signed?.signedUrl ?? null
-  }
+  const photoUrl = raw.has_photo && signedUrl ? await preloadPhoto(signedUrl) : null
 
   return { kind: 'found', certificate, photoUrl }
 }

@@ -49,7 +49,10 @@ export const employeeFormSchema = z
     authorityName: requiredText('الأمانة'),
     municipalityName: requiredText('البلدية'),
     employeeName: requiredText('الاسم'),
-    identityNumber: requiredText('رقم الهوية', 20),
+    identityNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{10}$/, 'رقم الهوية يجب أن يتكون من 10 أرقام بالضبط'),
     gender: requiredText('الجنس', 20),
     nationality: requiredText('الجنسية', 60),
     certificateNumber: requiredText('رقم الشهادة الصحية', 60),

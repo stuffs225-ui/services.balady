@@ -27,6 +27,21 @@ describe('employeeFormSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('requires the identity number to be exactly 10 digits', () => {
+    expect(employeeFormSchema.safeParse({ ...validBase, identityNumber: '123456789' }).success).toBe(
+      false,
+    )
+    expect(
+      employeeFormSchema.safeParse({ ...validBase, identityNumber: '12345678901' }).success,
+    ).toBe(false)
+    expect(
+      employeeFormSchema.safeParse({ ...validBase, identityNumber: '123456789a' }).success,
+    ).toBe(false)
+    expect(
+      employeeFormSchema.safeParse({ ...validBase, identityNumber: '1234567890' }).success,
+    ).toBe(true)
+  })
+
   it('rejects a missing required field', () => {
     const result = employeeFormSchema.safeParse({ ...validBase, employeeName: '' })
     expect(result.success).toBe(false)

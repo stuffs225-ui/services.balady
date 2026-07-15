@@ -37,6 +37,7 @@ const FAKE_EMPLOYEE: Employee = {
   employee_photo_path: 'fake-token-0000000000/photo',
   employee_photo_crop: null,
   employee_card_overrides: null,
+  visit_count: 0,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

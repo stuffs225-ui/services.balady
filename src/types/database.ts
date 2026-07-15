@@ -24,14 +24,21 @@ export type Employee = {
   employee_photo_crop: EmployeePhotoCrop | null
   employee_card_overrides: EmployeeCardOverrides | null
   is_active: boolean
+  /**
+   * Admin-only visit counter for the public certificate page, incremented
+   * server-side by verify_certificate() on every lookup (QR scan or direct
+   * link) — never set or read by the client, and never exposed through the
+   * public RPC's own return type.
+   */
+  visit_count: number
   created_at: string
   updated_at: string
 }
 
-export type EmployeeInsert = Omit<Employee, 'id' | 'created_at' | 'updated_at'>
+export type EmployeeInsert = Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'visit_count'>
 
 export type EmployeeUpdate = Partial<
-  Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at'>
+  Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at' | 'visit_count'>
 >
 
 export type CertificateStatus = 'active' | 'expired' | 'revoked'

@@ -45,6 +45,7 @@ const FAKE_EMPLOYEE: Employee = {
   employee_photo_path: 'token-1/photo',
   employee_photo_crop: null,
   employee_card_overrides: null,
+  visit_count: 42,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
@@ -95,5 +96,20 @@ describe('EmployeeDetailsPage permanent delete', () => {
     expect(screen.getByText('تفاصيل الموظف')).toBeInTheDocument()
 
     vi.unstubAllGlobals()
+  })
+})
+
+describe('EmployeeDetailsPage visit count', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetEmployeeById.mockResolvedValue(FAKE_EMPLOYEE)
+    mockGetEmployeePhotoUrl.mockResolvedValue(null)
+  })
+
+  it('shows the admin-only visit count next to the action buttons', async () => {
+    renderPage()
+    await screen.findByText('تفاصيل الموظف')
+
+    expect(screen.getByText('عدد الزيارات: 42')).toBeInTheDocument()
   })
 })

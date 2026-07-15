@@ -97,7 +97,7 @@ describe('PrintEmployeePage export/print buttons', () => {
     const printButton = await screen.findByRole('button', { name: 'طباعة' })
     expect(printButton).toBeDisabled()
     const loadingButtons = screen.getAllByRole('button', { name: 'جارٍ تحميل القالب...' })
-    expect(loadingButtons).toHaveLength(2)
+    expect(loadingButtons).toHaveLength(3)
     loadingButtons.forEach((button) => expect(button).toBeDisabled())
 
     FakeImage.resolveAll()
@@ -105,5 +105,45 @@ describe('PrintEmployeePage export/print buttons', () => {
     await waitFor(() => expect(printButton).toBeEnabled())
     expect(await screen.findByRole('button', { name: 'تنزيل كصورة عالية الوضوح' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'تنزيل PDF' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'تنزيل PDF (أسرع)' })).toBeEnabled()
+  })
+})
+
+describe('PrintEmployeePage fast PDF export', () => {
+  beforeEach(() => {
+    mockGetEmployeeById.mockResolvedValue(FAKE_EMPLOYEE)
+    mockUseSiteSettings.mockReturnValue({
+      employeeCardTemplateUrl: 'https://cdn.test/template.png',
+      employeeCardBackTemplateUrl: null,
+      employeeCardLayout: defaultEmployeeCardLayout,
+    })
+    FakeImage.pending = []
+    vi.stubGlobal('Image', FakeImage)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.doUnmock('../../lib/employeeCardPdf')
+  })
+
+  it('calls exportEmployeeCardPdfFast (the canvas-based path), not the slower DOM-based export', async () => {
+    const mockExportFast = vi.fn().mockResolvedValue({ warnings: [] })
+    vi.doMock('../../lib/employeeCardPdf', () => ({
+      exportEmployeeCardPdfFast: mockExportFast,
+      errorMessage: (error: unknown) => String(error),
+    }))
+
+    const userEvent = (await import('@testing-library/user-event')).default
+    renderPage()
+    FakeImage.resolveAll()
+
+    const fastButton = await screen.findByRole('button', { name: 'تنزيل PDF (أسرع)' })
+    await waitFor(() => expect(fastButton).toBeEnabled())
+    await userEvent.click(fastButton)
+
+    await waitFor(() => expect(mockExportFast).toHaveBeenCalledTimes(1))
+    expect(mockExportFast).toHaveBeenCalledWith(
+      expect.objectContaining({ templateUrl: 'https://cdn.test/template.png', employee: FAKE_EMPLOYEE }),
+    )
   })
 })

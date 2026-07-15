@@ -119,6 +119,30 @@ function PrintEmployeePage() {
     }
   }
 
+  async function handleExportPdfFast() {
+    if (!employee || !employeeCardTemplateUrl || !isTemplateReady) return
+    setIsExporting(true)
+    setExportMessage(null)
+    try {
+      const { exportEmployeeCardPdfFast } = await import('../../lib/employeeCardPdf')
+      const { warnings } = await exportEmployeeCardPdfFast({
+        templateUrl: employeeCardTemplateUrl,
+        backTemplateUrl: employeeCardBackTemplateUrl,
+        employee,
+        publicUrl: getEmployeePublicUrl(employee.public_token),
+        layout: employeeCardLayout,
+      })
+      if (warnings.length > 0) {
+        setExportMessage(`تم تنزيل الملف، لكن تعذر تضمين — ${warnings.join(' | ')}`)
+      }
+    } catch (error) {
+      const { errorMessage } = await import('../../lib/employeeCardPdf')
+      setExportMessage(`تعذر تصدير الملف، يرجى المحاولة مرة أخرى (السبب: ${errorMessage(error)})`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   async function handleExportImage() {
     if (!employee || !employeeCardTemplateUrl || !isTemplateReady) return
     setIsExporting(true)
@@ -180,9 +204,17 @@ function PrintEmployeePage() {
           type="button"
           onClick={handleExportPdf}
           disabled={!isTemplateReady || isExporting}
-          className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60"
+          className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
         >
           {!isTemplateReady ? 'جارٍ تحميل القالب...' : isExporting ? 'جارٍ التصدير...' : 'تنزيل PDF'}
+        </button>
+        <button
+          type="button"
+          onClick={handleExportPdfFast}
+          disabled={!isTemplateReady || isExporting}
+          className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60"
+        >
+          {!isTemplateReady ? 'جارٍ تحميل القالب...' : isExporting ? 'جارٍ التصدير...' : 'تنزيل PDF (أسرع)'}
         </button>
       </div>
 

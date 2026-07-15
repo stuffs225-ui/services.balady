@@ -87,18 +87,39 @@ describe('EmployeeForm', () => {
 
     expect(
       (screen.getByLabelText('تاريخ إصدار الشهادة الصحية ميلادي') as HTMLInputElement).value,
-    ).toBe('2026-06-30')
+    ).toBe('2026/06/30')
     expect(
       (screen.getByLabelText('تاريخ إصدار الشهادة الصحية هجري') as HTMLInputElement).value,
     ).toBe('1448/01/15')
   })
 
-  it('forces native date inputs to dir="ltr" to prevent Safari scrambling the segment order', () => {
+  it('renders the Gregorian date fields as a masked YYYY/MM/DD text input, not a native date picker', () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 
-    const dateInput = screen.getByLabelText('تاريخ إصدار الشهادة الصحية ميلادي')
+    const dateInput = screen.getByLabelText(
+      'تاريخ إصدار الشهادة الصحية ميلادي',
+    ) as HTMLInputElement
+    // A native <input type="date">'s displayed text is controlled by the
+    // OS/browser locale (e.g. "15 Jul 2026" on some iOS locales) and can't
+    // be forced into a fixed format — this must be a plain text input so
+    // the app fully controls what's shown.
+    expect(dateInput.type).toBe('text')
     expect(dateInput).toHaveAttribute('dir', 'ltr')
     expect(dateInput.style.direction).toBe('ltr')
+    expect(dateInput).toHaveAttribute('inputMode', 'numeric')
+    expect(dateInput).toHaveAttribute('placeholder', 'YYYY/MM/DD')
+    expect(dateInput).toHaveAttribute('maxLength', '10')
+  })
+
+  it('formats typed digits into YYYY/MM/DD as the user types', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const dateInput = screen.getByLabelText(
+      'تاريخ إصدار الشهادة الصحية ميلادي',
+    ) as HTMLInputElement
+    fireEvent.change(dateInput, { target: { value: '20260715' } })
+
+    expect(dateInput.value).toBe('2026/07/15')
   })
 
   it('sets the direction/alignment as inline CSS too, not just the dir attribute', () => {

@@ -5,13 +5,13 @@ import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
 import { computeCertificateStatus, CERTIFICATE_STATUS_LABELS } from '../../lib/certificateStatus'
-import { formatGregorianDisplay } from '../../lib/dates'
+import { displayDateOnly } from '../../lib/dates'
 
 const GREGORIAN_DATE_KEYS = new Set<keyof Employee>(['issue_date_gregorian', 'expiry_date_gregorian'])
 
 function detailValue(employee: Employee, key: keyof Employee): string {
   const raw = employee[key] as string | null
-  return (GREGORIAN_DATE_KEYS.has(key) ? formatGregorianDisplay(raw) : raw) || '—'
+  return (GREGORIAN_DATE_KEYS.has(key) ? displayDateOnly(raw) : raw) || '—'
 }
 
 const DETAIL_ROWS: Array<{ label: string; key: keyof Employee }> = [

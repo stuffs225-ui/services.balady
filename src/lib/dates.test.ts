@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   CERTIFICATE_VALIDITY_DAYS,
   addDaysISO,
-  formatGregorianDisplay,
+  displayDateOnly,
   gregorianToHijri,
-  todayISO,
+  normalizeDateOnly,
+  todayDateOnly,
 } from './dates'
 
-describe('todayISO', () => {
+describe('todayDateOnly', () => {
   it('returns an ISO date string (YYYY-MM-DD)', () => {
-    expect(todayISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(todayDateOnly()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 })
 
@@ -43,14 +44,45 @@ describe('gregorianToHijri', () => {
   })
 })
 
-describe('formatGregorianDisplay', () => {
-  it('renders a stored ISO date as slash-separated YYYY/MM/DD', () => {
-    expect(formatGregorianDisplay('2026-06-30')).toBe('2026/06/30')
+describe('normalizeDateOnly', () => {
+  it('passes an already-canonical YYYY-MM-DD value through unchanged', () => {
+    expect(normalizeDateOnly('2026-07-15')).toBe('2026-07-15')
+  })
+
+  it('converts a YYYY/MM/DD display value to the canonical dash form', () => {
+    expect(normalizeDateOnly('2026/07/15')).toBe('2026-07-15')
+  })
+
+  it('never guesses at an ambiguous or localized value', () => {
+    expect(normalizeDateOnly('Jul 15 2026')).toBe('')
+    expect(normalizeDateOnly('15 Jul 2026')).toBe('')
+    expect(normalizeDateOnly('not-a-date')).toBe('')
   })
 
   it('returns an empty string for missing values', () => {
-    expect(formatGregorianDisplay(null)).toBe('')
-    expect(formatGregorianDisplay(undefined)).toBe('')
-    expect(formatGregorianDisplay('')).toBe('')
+    expect(normalizeDateOnly(null)).toBe('')
+    expect(normalizeDateOnly(undefined)).toBe('')
+    expect(normalizeDateOnly('')).toBe('')
+  })
+})
+
+describe('displayDateOnly', () => {
+  it('renders a stored ISO date as slash-separated YYYY/MM/DD', () => {
+    expect(displayDateOnly('2026-06-30')).toBe('2026/06/30')
+  })
+
+  it('renders an already-slash value the same way', () => {
+    expect(displayDateOnly('2026/06/30')).toBe('2026/06/30')
+  })
+
+  it('never fabricates a date from an ambiguous or localized value', () => {
+    expect(displayDateOnly('Jul 15 2026')).toBe('–')
+    expect(displayDateOnly('15 Jul 2026')).toBe('–')
+  })
+
+  it('returns a dash for missing values', () => {
+    expect(displayDateOnly(null)).toBe('–')
+    expect(displayDateOnly(undefined)).toBe('–')
+    expect(displayDateOnly('')).toBe('–')
   })
 })

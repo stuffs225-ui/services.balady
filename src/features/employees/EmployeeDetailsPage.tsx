@@ -160,6 +160,12 @@ function EmployeeDetailsPage() {
             >
               طباعة
             </Link>
+            <Link
+              to={`/employees/${employee.id}/card`}
+              className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+            >
+              تخصيص كرت هذا الموظف
+            </Link>
             <a
               href={publicUrl}
               target="_blank"

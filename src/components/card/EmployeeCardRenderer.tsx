@@ -24,6 +24,9 @@ export const FONT_STACK = 'Arial, Tahoma, sans-serif'
 // PNG export (employeeCardPdf.ts) reads employee data through the exact
 // same mapping instead of a second, independently-maintained copy.
 export function fieldValue(employee: Employee, field: TextFieldKey): string {
+  const overrideText = employee.employee_card_overrides?.[field]?.text
+  if (overrideText) return overrideText
+
   switch (field) {
     case 'fullName':
       return employee.employee_name
@@ -46,6 +49,20 @@ export function fieldValue(employee: Employee, field: TextFieldKey): string {
     default:
       return ''
   }
+}
+
+/**
+ * A field's configured font size, unless this specific employee has a
+ * per-card override for it — layered on top of the global calibration so a
+ * single special-case card can be adjusted without touching the shared
+ * layout used by every other card.
+ */
+export function fieldFontSize(
+  employee: Employee,
+  field: TextFieldKey,
+  layout: EmployeeCardLayout,
+): number {
+  return employee.employee_card_overrides?.[field]?.fontSize ?? layout[field].fontSize
 }
 
 const NUMERIC_FIELD_SET = new Set<string>(EMPLOYEE_CARD_NUMERIC_FIELDS)
@@ -285,7 +302,7 @@ function EmployeeCardRenderer({
             field={field}
             box={box}
             value={value}
-            fontSize={scaledFontSize(box.fontSize)}
+            fontSize={scaledFontSize(fieldFontSize(employee, field, layout))}
             isNumeric={isNumeric}
             isFullName={field === 'fullName'}
             calibrationMode={calibrationMode}

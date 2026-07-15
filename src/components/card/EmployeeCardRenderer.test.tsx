@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import EmployeeCardRenderer from './EmployeeCardRenderer'
+import EmployeeCardRenderer, { fieldValue, fieldFontSize } from './EmployeeCardRenderer'
+import { defaultEmployeeCardLayout } from '../../config/employeeCardLayout'
 import type { Employee } from '../../types/database'
 
 vi.mock('../../features/employees/api', () => ({
@@ -35,6 +36,7 @@ const FAKE_EMPLOYEE: Employee = {
   program_completion_date_hijri: null,
   employee_photo_path: 'fake-token-0000000000/photo',
   employee_photo_crop: null,
+  employee_card_overrides: null,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
@@ -75,5 +77,43 @@ describe('EmployeeCardRenderer', () => {
       expect(screen.queryByAltText('اسم تجريبي')).toBeNull()
       expect(screen.queryByAltText('رمز الاستجابة السريعة')).toBeNull()
     })
+  })
+})
+
+describe('fieldValue with per-employee overrides', () => {
+  it('uses the default value when there is no override', () => {
+    expect(fieldValue(FAKE_EMPLOYEE, 'fullName')).toBe('اسم تجريبي')
+  })
+
+  it('uses the override text when one is set for the field', () => {
+    const employee: Employee = {
+      ...FAKE_EMPLOYEE,
+      employee_card_overrides: { fullName: { text: 'اسم مخصص لهذا الموظف' } },
+    }
+    expect(fieldValue(employee, 'fullName')).toBe('اسم مخصص لهذا الموظف')
+  })
+
+  it('does not let an override on one field leak into another field', () => {
+    const employee: Employee = {
+      ...FAKE_EMPLOYEE,
+      employee_card_overrides: { fullName: { text: 'اسم مخصص' } },
+    }
+    expect(fieldValue(employee, 'profession')).toBe('مهنة تجريبية')
+  })
+})
+
+describe('fieldFontSize with per-employee overrides', () => {
+  it('falls back to the shared layout font size when there is no override', () => {
+    expect(fieldFontSize(FAKE_EMPLOYEE, 'fullName', defaultEmployeeCardLayout)).toBe(
+      defaultEmployeeCardLayout.fullName.fontSize,
+    )
+  })
+
+  it('uses the override font size when one is set for the field', () => {
+    const employee: Employee = {
+      ...FAKE_EMPLOYEE,
+      employee_card_overrides: { fullName: { fontSize: 50 } },
+    }
+    expect(fieldFontSize(employee, 'fullName', defaultEmployeeCardLayout)).toBe(50)
   })
 })

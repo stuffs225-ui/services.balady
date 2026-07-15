@@ -22,6 +22,7 @@ export type Employee = {
   program_completion_date_hijri: string | null
   employee_photo_path: string | null
   employee_photo_crop: EmployeePhotoCrop | null
+  employee_card_overrides: EmployeeCardOverrides | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -89,6 +90,15 @@ export type EmployeeCardLayout = {
   educationProgramType: EmployeeCardTextBox
   educationProgramExpiry: EmployeeCardTextBox
 }
+
+export type EmployeeCardFieldOverride = {
+  fontSize?: number
+  text?: string
+}
+
+export type EmployeeCardOverrides = Partial<
+  Record<Exclude<keyof EmployeeCardLayout, 'photo' | 'qr'>, EmployeeCardFieldOverride>
+>
 
 export type FooterBadgeSetting = {
   imagePath: string

@@ -1,4 +1,9 @@
-import { fieldValue, FONT_STACK, type TextFieldKey } from '../components/card/EmployeeCardRenderer'
+import {
+  fieldValue,
+  fieldFontSize,
+  FONT_STACK,
+  type TextFieldKey,
+} from '../components/card/EmployeeCardRenderer'
 import { getEmployeePhotoUrl } from '../features/employees/api'
 import { generateQrDataUrl } from './qrcode'
 import { computeCoverDrawRect, normalizePhotoCrop } from './photoCrop'
@@ -103,9 +108,10 @@ export async function renderEmployeeCardToCanvas(
 
   // 5. Text overlays.
   for (const field of EMPLOYEE_CARD_TEXT_FIELD_ORDER) {
+    const box = layout[field] as EmployeeCardTextBox
     drawTextField(ctx, {
       value: fieldValue(employee, field),
-      box: layout[field] as EmployeeCardTextBox,
+      box: { ...box, fontSize: fieldFontSize(employee, field, layout) },
       canvasWidth: width,
       canvasHeight: height,
       scale,

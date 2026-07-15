@@ -92,6 +92,30 @@ export type FooterBadgeSetting = {
   href: string | null
 }
 
+export type EmployeeFormFieldStyle = {
+  dir: 'rtl' | 'ltr'
+  align: 'right' | 'left' | 'center'
+}
+
+export type EmployeeFormStylableField =
+  | 'authorityName'
+  | 'municipalityName'
+  | 'employeeName'
+  | 'identityNumber'
+  | 'gender'
+  | 'nationality'
+  | 'certificateNumber'
+  | 'profession'
+  | 'issueDateHijri'
+  | 'expiryDateHijri'
+  | 'programType'
+  | 'programCompletionDateHijri'
+  | 'licenseNumber'
+  | 'establishmentName'
+  | 'establishmentNumber'
+
+export type EmployeeFormFieldStyles = Record<EmployeeFormStylableField, EmployeeFormFieldStyle>
+
 export type SiteSettings = {
   id: string
   logo_path: string | null
@@ -109,6 +133,7 @@ export type SiteSettings = {
   employee_card_template_path: string | null
   employee_card_back_template_path: string | null
   employee_card_layout: Partial<EmployeeCardLayout> | null
+  employee_form_field_styles: Partial<EmployeeFormFieldStyles> | null
   updated_at: string
 }
 
@@ -130,6 +155,7 @@ export type SiteSettingsUpdate = Partial<
     | 'employee_card_template_path'
     | 'employee_card_back_template_path'
     | 'employee_card_layout'
+    | 'employee_form_field_styles'
   >
 >
 

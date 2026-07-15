@@ -34,7 +34,7 @@ const EASTERN_ARABIC_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
  * OCR'd digits were silently discarded entirely by \D-based extraction,
  * since JavaScript's \d only ever matches 0-9.
  */
-function normalizeDigits(text: string): string {
+export function normalizeDigits(text: string): string {
   return text.replace(/[٠-٩۰-۹]/g, (char) => {
     const arabicIndex = ARABIC_INDIC_DIGITS.indexOf(char)
     if (arabicIndex !== -1) return String(arabicIndex)

@@ -17,6 +17,11 @@ function buildDefaultValues(): Partial<EmployeeFormValues> {
   const expiry = addDaysISO(issue, CERTIFICATE_VALIDITY_DAYS)
   const programCompletion = addDaysISO(issue, PROGRAM_VALIDITY_DAYS)
   return {
+    // The vast majority of registrations are for this same authority/
+    // municipality — pre-filled so the admin only needs to change it for
+    // the rare exception, rather than typing it every time.
+    authorityName: 'أمانة منطقة الرياض',
+    municipalityName: 'بلدية الشفاء',
     issueDateGregorian: issue,
     issueDateHijri: gregorianToHijri(issue),
     expiryDateGregorian: expiry,

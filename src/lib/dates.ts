@@ -1,4 +1,6 @@
 export const CERTIFICATE_VALIDITY_DAYS = 365
+/** Educational program completion date = issue date + this many days. */
+export const PROGRAM_VALIDITY_DAYS = 1095
 
 /**
  * Normalizes a Gregorian date-only value to the canonical storage shape

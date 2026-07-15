@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
-import { displayDateOnly, gregorianToHijri, normalizeDateOnly } from '../../lib/dates'
+import {
+  PROGRAM_VALIDITY_DAYS,
+  addDaysISO,
+  displayDateOnly,
+  gregorianToHijri,
+  normalizeDateOnly,
+} from '../../lib/dates'
 import {
   DEFAULT_PHOTO_CROP,
   computeCoverDrawRect,
@@ -284,6 +290,18 @@ function EmployeeForm({
     const hijriField = GREGORIAN_TO_HIJRI[field]
     if (hijriField) {
       setValue(hijriField, isoValue ? gregorianToHijri(isoValue) : '', { shouldValidate: true })
+    }
+
+    // The educational program's completion date is always issue date +
+    // 1095 days (Hijri) — recomputed whenever the issue date changes, same
+    // as the certificate's own Hijri dates above. Still a plain text
+    // field afterward, so the admin can still edit it by hand if needed.
+    if (field === 'issueDateGregorian') {
+      setValue(
+        'programCompletionDateHijri',
+        isoValue ? gregorianToHijri(addDaysISO(isoValue, PROGRAM_VALIDITY_DAYS)) : '',
+        { shouldValidate: true },
+      )
     }
   }
 

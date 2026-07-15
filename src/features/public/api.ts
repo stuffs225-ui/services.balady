@@ -1,51 +1,38 @@
-import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import type { PublicCertificate } from '../../types/database'
 
-const PHOTO_SIGNED_URL_TTL_SECONDS = 60
-
 export type PublicCertificateResult =
-  | { kind: 'found'; certificate: PublicCertificate; photoUrl: string | null }
+  | { kind: 'found'; certificate: PublicCertificate; photoUrl: string | null; photoLoadFailed?: boolean }
   | { kind: 'not-found' }
   | { kind: 'network-error' }
 
-async function requestSignedPhotoUrl(token: string): Promise<string | null> {
-  const { data } = await supabase.storage
-    .from(EMPLOYEE_PHOTOS_BUCKET)
-    .createSignedUrl(`${token}/photo`, PHOTO_SIGNED_URL_TTL_SECONDS)
-  return data?.signedUrl ?? null
+function publicPhotoUrl(token: string, attempt: number): string {
+  const base = `/api/public-employee-photo/${encodeURIComponent(token)}`
+  return attempt === 0 ? base : `${base}?retry=${attempt}`
 }
 
-// Fetches the photo's bytes ourselves and embeds them directly as a
-// base64 data URL, instead of handing the page a remote URL for the
-// browser to fetch/decode on its own. Some in-app mini-browsers
-// (Snapchat, Instagram, etc.) are unreliable at loading a remote <img src>
-// even when the exact same URL works fine elsewhere. A data URL has no
-// follow-up network request at all — it's part of the page's own data by
-// the time the page renders, so there's nothing left for the browser to
-// get wrong.
-async function fetchPhotoAsDataUrl(signedUrl: string): Promise<string | null> {
-  try {
-    const response = await fetch(signedUrl)
-    if (!response.ok) return null
-    const blob = await response.blob()
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(reader.error)
-      reader.readAsDataURL(blob)
-    })
-  } catch {
-    return null
+// Preloads and decodes the employee photo from our own same-origin proxy
+// endpoint before the page ever leaves its loading state, retrying once on
+// failure. Being same-origin (not a Supabase Storage signed URL) avoids the
+// cross-origin decode()/CORS quirks that in-app browsers (Snapchat,
+// Instagram, etc.) have with remote images.
+async function loadEmployeePhoto(token: string): Promise<{ url: string | null; failed: boolean }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const src = publicPhotoUrl(token, attempt)
+    try {
+      const img = new Image()
+      img.src = src
+      await img.decode()
+      return { url: src, failed: false }
+    } catch {
+      // fall through and retry once, then give up
+    }
   }
+  return { url: null, failed: true }
 }
 
 export async function fetchPublicCertificate(token: string): Promise<PublicCertificateResult> {
-  // The photo's storage path is derived from the token alone, so it can be
-  // requested in parallel with the RPC instead of waiting for it to resolve.
-  const [{ data, error }, signedUrl] = await Promise.all([
-    supabase.rpc('verify_certificate', { p_token: token }),
-    requestSignedPhotoUrl(token),
-  ])
+  const { data, error } = await supabase.rpc('verify_certificate', { p_token: token })
 
   if (error) {
     return { kind: 'network-error' }
@@ -63,7 +50,10 @@ export async function fetchPublicCertificate(token: string): Promise<PublicCerti
     status: (raw.status as string) === 'expiring' ? 'active' : raw.status,
   }
 
-  const photoUrl = raw.has_photo && signedUrl ? await fetchPhotoAsDataUrl(signedUrl) : null
+  if (!raw.has_photo) {
+    return { kind: 'found', certificate, photoUrl: null }
+  }
 
-  return { kind: 'found', certificate, photoUrl }
+  const { url, failed } = await loadEmployeePhoto(token)
+  return { kind: 'found', certificate, photoUrl: url, photoLoadFailed: failed }
 }

@@ -1,12 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
 import { gregorianToHijri } from '../../lib/dates'
 import { useSiteSettings } from '../settings/useSiteSettings'
 import type { EmployeeFormFieldStyles, EmployeeFormStylableField } from '../../types/database'
+import { getEmployeeFieldSuggestions, type EmployeeSuggestionField } from './api'
+import { extractIdCardFields } from '../../lib/idCardOcr'
 
 type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto'>
+
+const SUGGESTABLE_FIELDS = new Set<TextFieldName>([
+  'authorityName',
+  'municipalityName',
+  'profession',
+  'programType',
+  'programCompletionDateHijri',
+  'licenseNumber',
+  'establishmentName',
+  'establishmentNumber',
+])
 
 type FieldConfig = {
   name: TextFieldName
@@ -55,6 +68,9 @@ type EmployeeFormProps = {
   formError?: string | null
   /** Overrides the saved field styles — used for the live preview in Settings. */
   fieldStylesOverride?: EmployeeFormFieldStyles
+  /** Used by the Settings live preview: skips the ID-scan and suggestions
+   * features, which are meaningless against fictional preview data. */
+  previewMode?: boolean
 }
 
 function EmployeeForm({
@@ -65,8 +81,14 @@ function EmployeeForm({
   onSubmit,
   formError,
   fieldStylesOverride,
+  previewMode = false,
 }: EmployeeFormProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(existingPhotoUrl ?? null)
+  const [fieldSuggestions, setFieldSuggestions] = useState<
+    Partial<Record<EmployeeSuggestionField, string[]>>
+  >({})
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractMessage, setExtractMessage] = useState<string | null>(null)
   const { employeeFormFieldStyles } = useSiteSettings()
   const fieldStyles = fieldStylesOverride ?? employeeFormFieldStyles
 
@@ -79,6 +101,48 @@ function EmployeeForm({
     resolver: zodResolver(employeeFormSchema),
     defaultValues,
   })
+
+  useEffect(() => {
+    if (previewMode) return
+    let cancelled = false
+
+    getEmployeeFieldSuggestions()
+      .then((suggestions) => {
+        if (!cancelled) setFieldSuggestions(suggestions)
+      })
+      .catch(() => {
+        // Suggestions are a convenience only — silently do without them.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [previewMode])
+
+  async function handleIdCardChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setIsExtracting(true)
+    setExtractMessage(null)
+    try {
+      const fields = await extractIdCardFields(file)
+      const entries = Object.entries(fields) as Array<[TextFieldName, string]>
+      for (const [name, value] of entries) {
+        setValue(name, value, { shouldValidate: true })
+      }
+      setExtractMessage(
+        entries.length > 0
+          ? `تم استخراج ${entries.length} حقل/حقول من الهوية، يرجى مراجعتها وإكمال باقي الحقول يدويًا`
+          : 'تعذر استخراج بيانات واضحة من صورة الهوية، يرجى تعبئة الحقول يدويًا',
+      )
+    } catch {
+      setExtractMessage('تعذر معالجة صورة الهوية، يرجى المحاولة مرة أخرى أو التعبئة يدويًا')
+    } finally {
+      setIsExtracting(false)
+    }
+  }
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -99,6 +163,33 @@ function EmployeeForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
+      {!previewMode && (
+        <div className="rounded-field border border-dashed border-divider p-4">
+          <label htmlFor="idCardScan" className="mb-2 block text-sm font-bold text-text-primary">
+            استخراج البيانات من صورة الهوية (اختياري)
+          </label>
+          <p className="mb-3 text-xs text-text-secondary">
+            ارفع صورة هوية مقيم أو هوية وطنية لتعبئة الحقول المتاحة تلقائيًا. تتم معالجة الصورة
+            داخل المتصفح فقط ولا يتم حفظها أو رفعها لأي خادم، ويبقى عليك مراجعة النتيجة وإكمال
+            الحقول غير الموجودة على الهوية يدويًا.
+          </p>
+          <input
+            id="idCardScan"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleIdCardChange}
+            disabled={isExtracting}
+            className="text-sm"
+          />
+          {isExtracting && (
+            <p className="mt-2 text-sm text-text-secondary">جارٍ استخراج البيانات...</p>
+          )}
+          {extractMessage && !isExtracting && (
+            <p className="mt-2 text-sm text-brand-primary">{extractMessage}</p>
+          )}
+        </div>
+      )}
+
       <div>
         <label htmlFor="employeePhoto" className="mb-2 block text-sm font-bold text-text-primary">
           الصورة الشخصية
@@ -154,27 +245,39 @@ function EmployeeForm({
                 ))}
               </select>
             ) : (
-              <input
-                id={field.name}
-                type={field.type}
-                dir={field.type === 'date' ? undefined : style?.dir}
-                {...register(
-                  field.name,
-                  GREGORIAN_TO_HIJRI[field.name]
-                    ? {
-                        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                          const hijriField = GREGORIAN_TO_HIJRI[field.name]!
-                          setValue(hijriField, gregorianToHijri(event.target.value), {
-                            shouldValidate: true,
-                          })
-                        },
-                      }
-                    : undefined,
+              <>
+                <input
+                  id={field.name}
+                  type={field.type}
+                  dir={field.type === 'date' ? undefined : style?.dir}
+                  list={SUGGESTABLE_FIELDS.has(field.name) ? `${field.name}-suggestions` : undefined}
+                  {...register(
+                    field.name,
+                    GREGORIAN_TO_HIJRI[field.name]
+                      ? {
+                          onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                            const hijriField = GREGORIAN_TO_HIJRI[field.name]!
+                            setValue(hijriField, gregorianToHijri(event.target.value), {
+                              shouldValidate: true,
+                            })
+                          },
+                        }
+                      : undefined,
+                  )}
+                  className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
+                    field.type !== 'date' && style ? ALIGN_CLASS[style.align] : ''
+                  }`}
+                />
+                {SUGGESTABLE_FIELDS.has(field.name) && (
+                  <datalist id={`${field.name}-suggestions`}>
+                    {(fieldSuggestions[field.name as EmployeeSuggestionField] ?? []).map(
+                      (value) => (
+                        <option key={value} value={value} />
+                      ),
+                    )}
+                  </datalist>
                 )}
-                className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
-                  field.type !== 'date' && style ? ALIGN_CLASS[style.align] : ''
-                }`}
-              />
+              </>
             )}
 
             {errors[field.name] && (

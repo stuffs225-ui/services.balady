@@ -1,8 +1,37 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import EmployeeForm from './EmployeeForm'
 
+const mockGetEmployeeFieldSuggestions = vi.fn()
+
+vi.mock('./api', () => ({
+  getEmployeeFieldSuggestions: () => mockGetEmployeeFieldSuggestions(),
+}))
+
+vi.mock('../../lib/idCardOcr', () => ({
+  extractIdCardFields: vi.fn().mockResolvedValue({
+    employeeName: 'SAMPLE TESTNAME EXAMPLE',
+    identityNumber: '1111222233',
+  }),
+}))
+
 describe('EmployeeForm', () => {
+  beforeEach(() => {
+    mockGetEmployeeFieldSuggestions.mockReset()
+    mockGetEmployeeFieldSuggestions.mockResolvedValue({
+      authorityName: ['أمانة تجريبية'],
+      municipalityName: [],
+      profession: [],
+      programType: [],
+      programCompletionDateHijri: [],
+      licenseNumber: [],
+      establishmentName: [],
+      establishmentNumber: [],
+    })
+  })
+
+
   it('auto-fills the Hijri issue date when the Gregorian issue date changes', () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 
@@ -62,5 +91,40 @@ describe('EmployeeForm', () => {
     expect(
       (screen.getByLabelText('تاريخ إصدار الشهادة الصحية هجري') as HTMLInputElement).value,
     ).toBe('1448/01/15')
+  })
+
+  it('offers previously used values as a pick-list for repeatable fields', async () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const input = screen.getByLabelText('الأمانة')
+    await waitFor(() => {
+      const list = document.getElementById(input.getAttribute('list')!)
+      expect(list?.querySelector('option[value="أمانة تجريبية"]')).toBeTruthy()
+    })
+  })
+
+  it('does not fetch suggestions or show the ID-scan section in preview mode', () => {
+    render(
+      <EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} previewMode />,
+    )
+
+    expect(mockGetEmployeeFieldSuggestions).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('استخراج البيانات من صورة الهوية (اختياري)')).toBeNull()
+  })
+
+  it('fills fields extracted from an uploaded ID card image', async () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const idInput = screen.getByLabelText('استخراج البيانات من صورة الهوية (اختياري)')
+    const file = new File(['fake-image-bytes'], 'id.jpg', { type: 'image/jpeg' })
+    await userEvent.upload(idInput, file)
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('الاسم') as HTMLInputElement).value).toBe(
+        'SAMPLE TESTNAME EXAMPLE',
+      )
+      expect((screen.getByLabelText('رقم الهوية') as HTMLInputElement).value).toBe('1111222233')
+    })
+    expect(screen.getByText(/تم استخراج 2 حقل\/حقول/)).toBeInTheDocument()
   })
 })

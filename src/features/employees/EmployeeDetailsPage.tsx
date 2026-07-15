@@ -35,6 +35,7 @@ function EmployeeDetailsPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle')
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const successMessage = (location.state as { created?: boolean; updated?: boolean } | null)
     ?.created
@@ -48,22 +49,27 @@ function EmployeeDetailsPage() {
     let cancelled = false
 
     async function load() {
-      const data = await getEmployeeById(id!)
-      if (cancelled || !data) {
-        setIsLoading(false)
-        return
-      }
-      setEmployee(data)
+      try {
+        const data = await getEmployeeById(id!)
+        if (cancelled || !data) {
+          if (!cancelled) setIsLoading(false)
+          return
+        }
+        setEmployee(data)
 
-      const publicUrl = getEmployeePublicUrl(data.public_token)
-      const [photo, qr] = await Promise.all([
-        getEmployeePhotoUrl(data.employee_photo_path),
-        generateQrDataUrl(publicUrl),
-      ])
-      if (!cancelled) {
-        setPhotoUrl(photo)
-        setQrDataUrl(qr)
-        setIsLoading(false)
+        const publicUrl = getEmployeePublicUrl(data.public_token)
+        const [photo, qr] = await Promise.all([
+          getEmployeePhotoUrl(data.employee_photo_path),
+          generateQrDataUrl(publicUrl),
+        ])
+        if (!cancelled) {
+          setPhotoUrl(photo)
+          setQrDataUrl(qr)
+        }
+      } catch {
+        if (!cancelled) setLoadError('تعذر تحميل بيانات الموظف، يرجى تحديث الصفحة')
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
 
@@ -88,6 +94,7 @@ function EmployeeDetailsPage() {
   }
 
   if (isLoading) return <p className="text-text-secondary">جارٍ التحميل...</p>
+  if (loadError) return <p className="text-expired">{loadError}</p>
   if (!employee) return <p className="text-expired">تعذر العثور على الموظف</p>
 
   const publicUrl = getEmployeePublicUrl(employee.public_token)

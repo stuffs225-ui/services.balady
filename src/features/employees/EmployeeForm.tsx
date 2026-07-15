@@ -15,7 +15,7 @@ import {
   type EmployeePhotoCrop,
 } from '../../lib/photoCrop'
 import { getEmployeeFieldSuggestions, type EmployeeSuggestionField } from './api'
-import { extractIdCardFields } from '../../lib/idCardOcr'
+import { extractIdCardFields, normalizeDigits } from '../../lib/idCardOcr'
 import PhotoCropModal from './PhotoCropModal'
 
 type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto' | 'employeePhotoCrop'>
@@ -421,6 +421,26 @@ function EmployeeForm({
                 id={field.name}
                 value={(watch(field.name) as string) || ''}
                 onChange={(isoValue) => handleGregorianDateChange(field.name, isoValue)}
+              />
+            ) : field.name === 'identityNumber' ? (
+              <input
+                id={field.name}
+                type="text"
+                inputMode="numeric"
+                dir={dir}
+                style={{ direction: dir, textAlign: 'right' }}
+                {...register(field.name, {
+                  // Saudi ID cards print Arabic-Indic digits (٠-٩) — typing
+                  // or pasting the number straight from a card/scan
+                  // shouldn't require manually retyping it in Latin digits
+                  // to pass validation. Mutating event.target.value here
+                  // (before react-hook-form reads it) updates both the
+                  // visible input text and the stored form value together.
+                  onChange: (event) => {
+                    event.target.value = normalizeDigits(event.target.value)
+                  },
+                })}
+                className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-right text-text-primary outline-none focus:border-brand-primary"
               />
             ) : (
               <>

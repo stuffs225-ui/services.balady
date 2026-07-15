@@ -9,12 +9,16 @@ vi.mock('./api', () => ({
   getEmployeeFieldSuggestions: () => mockGetEmployeeFieldSuggestions(),
 }))
 
-vi.mock('../../lib/idCardOcr', () => ({
-  extractIdCardFields: vi.fn().mockResolvedValue({
-    employeeName: 'SAMPLE TESTNAME EXAMPLE',
-    identityNumber: '1111222233',
-  }),
-}))
+vi.mock('../../lib/idCardOcr', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/idCardOcr')>()
+  return {
+    ...actual,
+    extractIdCardFields: vi.fn().mockResolvedValue({
+      employeeName: 'SAMPLE TESTNAME EXAMPLE',
+      identityNumber: '1111222233',
+    }),
+  }
+})
 
 describe('EmployeeForm', () => {
   beforeEach(() => {
@@ -207,6 +211,15 @@ describe('EmployeeForm', () => {
     expect(screen.queryByText('معايرة الصورة الشخصية')).toBeNull()
     expect(screen.queryByAltText('معاينة الصورة الشخصية')).toBeNull()
     expect(photoInput.value).toBe('')
+  })
+
+  it('converts Arabic-Indic digits typed/pasted into the identity number field to Latin digits', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const idInput = screen.getByLabelText('رقم الهوية') as HTMLInputElement
+    fireEvent.change(idInput, { target: { value: '١٠٩٨٧٦٥٤٣٢' } })
+
+    expect(idInput.value).toBe('1098765432')
   })
 
   it('fills fields extracted from an uploaded ID card image', async () => {

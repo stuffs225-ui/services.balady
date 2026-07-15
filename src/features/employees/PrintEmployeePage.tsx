@@ -22,8 +22,25 @@ function PrintEmployeePage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportMessage, setExportMessage] = useState<string | null>(null)
+  const [isTemplateReady, setIsTemplateReady] = useState(false)
+  // Tracks which template URLs isTemplateReady was last computed for, so a
+  // change (new/replaced template) can be detected and reset during render
+  // — adjusting state while rendering, rather than in an effect, avoids an
+  // extra render pass (see react-hooks/set-state-in-effect).
+  const [syncedTemplateUrls, setSyncedTemplateUrls] = useState<{
+    front: string | null
+    back: string | null
+  }>({ front: null, back: null })
   const { employeeCardTemplateUrl, employeeCardBackTemplateUrl, employeeCardLayout } =
     useSiteSettings()
+
+  if (
+    employeeCardTemplateUrl !== syncedTemplateUrls.front ||
+    employeeCardBackTemplateUrl !== syncedTemplateUrls.back
+  ) {
+    setSyncedTemplateUrls({ front: employeeCardTemplateUrl, back: employeeCardBackTemplateUrl })
+    setIsTemplateReady(false)
+  }
 
   useEffect(() => {
     if (!id) return
@@ -44,8 +61,40 @@ function PrintEmployeePage() {
     }
   }, [id])
 
+  // The export/print buttons must stay disabled until the template
+  // (and back page, if any) have actually finished downloading — clicking
+  // right when the page opens, before that, used to export/print with the
+  // card's background missing since only the on-screen <img> was still
+  // mid-load.
+  useEffect(() => {
+    if (!employeeCardTemplateUrl) return
+    let cancelled = false
+
+    const urls = [employeeCardTemplateUrl, employeeCardBackTemplateUrl].filter(
+      (url): url is string => Boolean(url),
+    )
+
+    Promise.all(
+      urls.map(
+        (url) =>
+          new Promise<void>((resolve) => {
+            const img = new Image()
+            img.onload = () => resolve()
+            img.onerror = () => resolve()
+            img.src = url
+          }),
+      ),
+    ).then(() => {
+      if (!cancelled) setIsTemplateReady(true)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [employeeCardTemplateUrl, employeeCardBackTemplateUrl])
+
   async function handleExportPdf() {
-    if (!employee || !employeeCardTemplateUrl) return
+    if (!employee || !employeeCardTemplateUrl || !isTemplateReady) return
     setIsExporting(true)
     setExportMessage(null)
     try {
@@ -71,7 +120,7 @@ function PrintEmployeePage() {
   }
 
   async function handleExportImage() {
-    if (!employee || !employeeCardTemplateUrl) return
+    if (!employee || !employeeCardTemplateUrl || !isTemplateReady) return
     setIsExporting(true)
     setExportMessage(null)
     try {
@@ -110,25 +159,30 @@ function PrintEmployeePage() {
         <button
           type="button"
           onClick={() => window.print()}
-          className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+          disabled={!isTemplateReady}
+          className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
         >
           طباعة
         </button>
         <button
           type="button"
           onClick={handleExportImage}
-          disabled={!employeeCardTemplateUrl || isExporting}
+          disabled={!isTemplateReady || isExporting}
           className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
         >
-          {isExporting ? 'جارٍ التصدير...' : 'تنزيل كصورة عالية الوضوح'}
+          {!isTemplateReady
+            ? 'جارٍ تحميل القالب...'
+            : isExporting
+              ? 'جارٍ التصدير...'
+              : 'تنزيل كصورة عالية الوضوح'}
         </button>
         <button
           type="button"
           onClick={handleExportPdf}
-          disabled={!employeeCardTemplateUrl || isExporting}
+          disabled={!isTemplateReady || isExporting}
           className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60"
         >
-          {isExporting ? 'جارٍ التصدير...' : 'تنزيل PDF'}
+          {!isTemplateReady ? 'جارٍ تحميل القالب...' : isExporting ? 'جارٍ التصدير...' : 'تنزيل PDF'}
         </button>
       </div>
 

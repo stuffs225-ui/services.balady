@@ -220,11 +220,16 @@ async function renderCardFaceToDataUrl(
   }
 }
 
-async function waitForImages(container: HTMLElement, timeoutMs = 4000): Promise<void> {
+// A generous timeout — the template image can still be competing with the
+// rest of the app's initial network requests (bundle, fonts, Supabase
+// queries) on a fresh page load, especially on a slow connection. Checking
+// naturalWidth (not just .complete, which a failed load also sets) avoids
+// mistaking a broken image for a successfully loaded one.
+async function waitForImages(container: HTMLElement, timeoutMs = 15000): Promise<void> {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     const imgs = Array.from(container.querySelectorAll('img'))
-    if (imgs.every((img) => img.complete)) return
+    if (imgs.every((img) => img.complete && img.naturalWidth > 0)) return
     await new Promise((resolve) => setTimeout(resolve, 60))
   }
 }

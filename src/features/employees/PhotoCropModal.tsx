@@ -12,7 +12,7 @@ const EDITOR_SIZE = 260
 type PhotoCropModalProps = {
   file: File
   initialCrop?: EmployeePhotoCrop
-  onConfirm: (crop: EmployeePhotoCrop) => void
+  onConfirm: (crop: EmployeePhotoCrop, photoFile: File) => void
   onCancel: () => void
 }
 
@@ -24,6 +24,9 @@ function PhotoCropModal({ file, initialCrop, onConfirm, onCancel }: PhotoCropMod
   const [objectUrl] = useState(() => URL.createObjectURL(file))
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null)
   const [crop, setCrop] = useState<EmployeePhotoCrop>(initialCrop ?? DEFAULT_PHOTO_CROP)
+  const [removeBackground, setRemoveBackground] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processError, setProcessError] = useState<string | null>(null)
   const dragState = useRef<{
     pointerId: number
     startX: number
@@ -83,6 +86,26 @@ function PhotoCropModal({ file, initialCrop, onConfirm, onCancel }: PhotoCropMod
     }
   }
 
+  async function handleConfirmClick() {
+    if (!removeBackground) {
+      onConfirm(crop, file)
+      return
+    }
+
+    setIsProcessing(true)
+    setProcessError(null)
+    try {
+      const { removeBackground: runRemoval } = await import('@imgly/background-removal')
+      const resultBlob = await runRemoval(file, { model: 'isnet_fp16' })
+      const processedFile = new File([resultBlob], 'employee-photo-no-bg.png', { type: 'image/png' })
+      onConfirm(crop, processedFile)
+    } catch {
+      setProcessError('تعذرت إزالة الخلفية، يرجى المحاولة مرة أخرى أو إلغاء تحديد الخيار')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-sm rounded-field bg-surface p-6">
@@ -127,20 +150,43 @@ function PhotoCropModal({ file, initialCrop, onConfirm, onCancel }: PhotoCropMod
           className="w-full"
         />
 
+        <label className="mt-4 flex items-center gap-2 text-sm font-bold text-text-primary">
+          <input
+            type="checkbox"
+            checked={removeBackground}
+            onChange={(event) => setRemoveBackground(event.target.checked)}
+            disabled={isProcessing}
+          />
+          إزالة خلفية الصورة
+        </label>
+        <p className="mt-1 text-xs text-text-secondary">
+          تتم المعالجة داخل المتصفح فقط، تستغرق بضع ثوانٍ. تظهر الصورة بعدها بخلفية شفافة فوق تصميم
+          الكرت والصفحة العامة.
+        </p>
+
+        {isProcessing && (
+          <p className="mt-2 text-sm text-brand-primary">جارٍ إزالة الخلفية...</p>
+        )}
+        {processError && !isProcessing && (
+          <p className="mt-2 text-sm text-expired">{processError}</p>
+        )}
+
         <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+            disabled={isProcessing}
+            className="flex-1 rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
           >
             إلغاء
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(crop)}
-            className="flex-1 rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover"
+            onClick={handleConfirmClick}
+            disabled={isProcessing}
+            className="flex-1 rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60"
           >
-            اعتماد الصورة
+            {isProcessing ? 'جارٍ المعالجة...' : 'اعتماد الصورة'}
           </button>
         </div>
       </div>

@@ -294,14 +294,13 @@ function EmployeeForm({
     setPendingPhotoFile(file)
   }
 
-  function handleCropConfirm(crop: EmployeePhotoCrop) {
-    if (!pendingPhotoFile) return
-    setValue('employeePhoto', pendingPhotoFile, { shouldValidate: true })
+  function handleCropConfirm(crop: EmployeePhotoCrop, photoFile: File) {
+    setValue('employeePhoto', photoFile, { shouldValidate: true })
     setValue('employeePhotoCrop', crop, { shouldValidate: true })
 
     const reader = new FileReader()
     reader.onload = () => setPhotoPreview(reader.result as string)
-    reader.readAsDataURL(pendingPhotoFile)
+    reader.readAsDataURL(photoFile)
 
     setPendingPhotoFile(null)
   }

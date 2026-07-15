@@ -1,3 +1,5 @@
+import type { EmployeePhotoCrop } from '../lib/photoCrop'
+
 export type Employee = {
   id: string
   public_token: string
@@ -19,6 +21,7 @@ export type Employee = {
   expiry_date_gregorian: string
   program_completion_date_hijri: string | null
   employee_photo_path: string | null
+  employee_photo_crop: EmployeePhotoCrop | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -51,6 +54,7 @@ export type PublicCertificate = {
   expiry_date_gregorian: string
   program_completion_date_hijri: string | null
   has_photo: boolean
+  employee_photo_crop: EmployeePhotoCrop | null
   status: CertificateStatus
 }
 

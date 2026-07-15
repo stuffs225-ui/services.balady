@@ -4,9 +4,11 @@ import EmployeeForm from './EmployeeForm'
 import { getEmployeeById, getEmployeePhotoUrl, updateEmployee, isUniqueViolation } from './api'
 import type { Employee } from '../../types/database'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
+import { normalizePhotoCrop } from '../../lib/photoCrop'
 
 function toDefaultValues(employee: Employee): Partial<EmployeeFormValues> {
   return {
+    employeePhotoCrop: normalizePhotoCrop(employee.employee_photo_crop),
     authorityName: employee.authority_name,
     municipalityName: employee.municipality_name,
     employeeName: employee.employee_name,

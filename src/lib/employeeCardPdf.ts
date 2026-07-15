@@ -104,6 +104,14 @@ export type ExportEmployeeCardImageResult = ExportEmployeeCardPdfResult
  * Downloads the front face of the card as a standalone high-resolution PNG
  * (2x the card's normal 1004x638 export size), for admins who'd rather
  * convert it to a PDF themselves than rely on this app's PDF step.
+ *
+ * This renders directly on a <canvas> (see lib/employeeCardCanvas.ts) —
+ * background, template, calibrated photo, QR, then text, in that exact
+ * order, with a { alpha: false } context so the exported PNG can never
+ * contain a transparent pixel (the cause of PNGs rendering solid black in
+ * the iPhone Photos app). It deliberately does not reuse the DOM/
+ * html-to-image path renderCardFaceToDataUrl below still uses for the PDF
+ * export, which is left unchanged.
  */
 export async function exportEmployeeCardImage({
   templateUrl,
@@ -112,13 +120,12 @@ export async function exportEmployeeCardImage({
   layout,
   fileName,
 }: Omit<ExportEmployeeCardPdfOptions, 'backTemplateUrl'>): Promise<ExportEmployeeCardImageResult> {
-  const warnings: string[] = []
-  const dataUrl = await renderCardFaceToDataUrl(
+  const { renderEmployeeCardToCanvas } = await import('./employeeCardCanvas')
+  const { dataUrl, warnings } = await renderEmployeeCardToCanvas(
     templateUrl,
     employee,
     publicUrl,
     layout,
-    warnings,
     HIGH_RES_SCALE,
   )
   downloadDataUrl(dataUrl, fileName || cardFileName(employee, 'png'))

@@ -144,6 +144,38 @@ describe('EmployeeForm', () => {
     })
   })
 
+  it('opens the crop calibration modal after selecting a photo, and only shows the preview once confirmed', async () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const photoInput = screen.getByLabelText('الصورة الشخصية') as HTMLInputElement
+    const file = new File(['fake-photo-bytes'], 'photo.jpg', { type: 'image/jpeg' })
+    await userEvent.upload(photoInput, file)
+
+    expect(screen.getByText('معايرة الصورة الشخصية')).toBeInTheDocument()
+    expect(screen.queryByAltText('معاينة الصورة الشخصية')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'اعتماد الصورة' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('معايرة الصورة الشخصية')).toBeNull()
+      expect(screen.getByAltText('معاينة الصورة الشخصية')).toBeInTheDocument()
+    })
+  })
+
+  it('discards the selected photo when calibration is cancelled', async () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const photoInput = screen.getByLabelText('الصورة الشخصية') as HTMLInputElement
+    const file = new File(['fake-photo-bytes'], 'photo.jpg', { type: 'image/jpeg' })
+    await userEvent.upload(photoInput, file)
+
+    fireEvent.click(screen.getByRole('button', { name: 'إلغاء' }))
+
+    expect(screen.queryByText('معايرة الصورة الشخصية')).toBeNull()
+    expect(screen.queryByAltText('معاينة الصورة الشخصية')).toBeNull()
+    expect(photoInput.value).toBe('')
+  })
+
   it('fills fields extracted from an uploaded ID card image', async () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

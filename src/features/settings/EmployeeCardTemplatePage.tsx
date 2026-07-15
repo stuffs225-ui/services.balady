@@ -37,6 +37,7 @@ const PREVIEW_EMPLOYEE: Employee = {
   expiry_date_gregorian: '2027-06-30',
   program_completion_date_hijri: '1450/01/01',
   employee_photo_path: null,
+  employee_photo_crop: null,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

@@ -3,12 +3,13 @@ import { render, screen } from '@testing-library/react'
 import EmployeePortrait from './EmployeePortrait'
 
 describe('EmployeePortrait', () => {
-  it('renders the photo at a fixed 184x184px, not a fluid size', () => {
+  it('renders the photo box at a fixed 184x184px, not a fluid size', () => {
     render(<EmployeePortrait photoUrl="https://cdn.test/photo.jpg" employeeName="موظف تجريبي" />)
     const img = screen.getByAltText('موظف تجريبي')
-    expect(img.className).toContain('h-[184px]')
-    expect(img.className).toContain('w-[184px]')
-    expect(img.className).not.toContain('clamp')
+    const box = img.parentElement!
+    expect(box.className).toContain('h-[184px]')
+    expect(box.className).toContain('w-[184px]')
+    expect(box.className).not.toContain('clamp')
   })
 
   it('renders a same-size placeholder when there is no photo', () => {

@@ -22,6 +22,7 @@ const certificate: PublicCertificate = {
   expiry_date_gregorian: '2027-06-30',
   program_completion_date_hijri: '1451/01/15',
   has_photo: false,
+  employee_photo_crop: null,
   status: 'active',
 }
 

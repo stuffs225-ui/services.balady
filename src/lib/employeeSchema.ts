@@ -33,9 +33,19 @@ const photoSchema = z
   .refine((file) => file.size <= MAX_PHOTO_SIZE_BYTES, 'حجم الصورة يجب ألا يتجاوز 5 ميجابايت')
   .optional()
 
+const photoCropSchema = z
+  .object({
+    scale: z.number(),
+    offsetX: z.number(),
+    offsetY: z.number(),
+  })
+  .nullable()
+  .optional()
+
 export const employeeFormSchema = z
   .object({
     employeePhoto: photoSchema,
+    employeePhotoCrop: photoCropSchema,
     authorityName: requiredText('الأمانة'),
     municipalityName: requiredText('البلدية'),
     employeeName: requiredText('الاسم'),

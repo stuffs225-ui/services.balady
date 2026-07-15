@@ -35,6 +35,7 @@ describe('useSiteSettings', () => {
     expect(result.current.navLinks).toEqual(defaultNavLinks)
     expect(result.current.footerLinks).toEqual(defaultFooterLinks)
     expect(result.current.logoUrl).toBeNull()
+    expect(result.current.logoLinkHref).toBeNull()
     expect(result.current.footerBadges).toEqual([])
     expect(result.current.footerCopyrightText).toBe(defaultFooterCopyrightText)
     expect(result.current.footerSupportText).toBe(defaultFooterSupportText)
@@ -57,6 +58,7 @@ describe('useSiteSettings', () => {
     mockGetSiteSettings.mockResolvedValue({
       id: '00000000-0000-0000-0000-000000000001',
       logo_path: 'logo/custom.svg',
+      logo_link_href: 'https://example.test/organization',
       nav_links: [{ label: 'رئيسية', href: '/home' }],
       footer_links: [{ label: 'شروط', href: '/terms-custom' }],
       footer_badges: [{ imagePath: 'badges/one.png', alt: 'شارة', href: 'https://example.test' }],
@@ -73,6 +75,7 @@ describe('useSiteSettings', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     expect(result.current.logoUrl).toBe('https://cdn.test/logo/custom.svg')
+    expect(result.current.logoLinkHref).toBe('https://example.test/organization')
     expect(result.current.navLinks).toEqual([{ label: 'رئيسية', href: '/home' }])
     expect(result.current.footerLinks).toEqual([{ label: 'شروط', href: '/terms-custom' }])
     expect(result.current.footerBadges).toEqual([

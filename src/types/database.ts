@@ -99,6 +99,7 @@ export type FooterBadgeSetting = {
 export type SiteSettings = {
   id: string
   logo_path: string | null
+  logo_link_href: string | null
   nav_links: NavLinkSetting[]
   footer_links: NavLinkSetting[]
   footer_badges: FooterBadgeSetting[]
@@ -120,6 +121,7 @@ export type SiteSettingsUpdate = Partial<
   Pick<
     SiteSettings,
     | 'logo_path'
+    | 'logo_link_href'
     | 'nav_links'
     | 'footer_links'
     | 'footer_badges'

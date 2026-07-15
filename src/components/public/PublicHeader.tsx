@@ -6,7 +6,18 @@ import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicHeader() {
   const [isOpen, setIsOpen] = useState(false)
-  const { logoUrl, navLinks, logoSize = 96 } = useSiteSettings()
+  const { logoUrl, logoLinkHref, navLinks, logoSize = 96 } = useSiteSettings()
+
+  const logoElement = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt={siteIdentity.nameAr}
+      style={{ height: logoSize, width: 'auto' }}
+      className="object-contain"
+    />
+  ) : (
+    <Logo size={logoSize} />
+  )
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -30,16 +41,7 @@ function PublicHeader() {
           {isOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
 
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={siteIdentity.nameAr}
-            style={{ height: logoSize, width: 'auto' }}
-            className="object-contain"
-          />
-        ) : (
-          <Logo size={logoSize} />
-        )}
+        {logoLinkHref ? <a href={logoLinkHref}>{logoElement}</a> : logoElement}
       </div>
 
       <MobileNavigation isOpen={isOpen} navLinks={navLinks} />

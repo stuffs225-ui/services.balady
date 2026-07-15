@@ -36,6 +36,7 @@ function SettingsPage() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoLinkHref, setLogoLinkHref] = useState('')
   const [navLinks, setNavLinks] = useState<NavLinkSetting[]>([])
   const [footerLinks, setFooterLinks] = useState<NavLinkSetting[]>([])
   const [badges, setBadges] = useState<BadgeDraft[]>([])
@@ -56,6 +57,7 @@ function SettingsPage() {
         const settings = await getSiteSettings()
         if (cancelled) return
         setLogoPreview(getBrandingAssetUrl(settings?.logo_path ?? null))
+        setLogoLinkHref(settings?.logo_link_href ?? '')
         // Seed the editor with what visitors currently see (the static
         // defaults) when no admin-configured links have been saved yet, so
         // there's always something to edit rather than a blank list.
@@ -131,6 +133,7 @@ function SettingsPage() {
 
       await updateSiteSettings({
         ...(logoPath !== undefined ? { logo_path: logoPath } : {}),
+        logo_link_href: logoLinkHref || null,
         nav_links: navLinks.filter((link) => link.label && link.href),
         footer_links: footerLinks.filter((link) => link.label && link.href),
         footer_badges: resolvedBadges,
@@ -264,6 +267,18 @@ function SettingsPage() {
           onChange={(event) => setLogoSize(Number(event.target.value))}
           className="w-full"
         />
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-bold text-text-primary">
+            الرابط عند الضغط على الشعار (اختياري — إذا تُرك فارغًا يبقى الشعار غير قابل للنقر)
+          </label>
+          <input
+            value={logoLinkHref}
+            onChange={(event) => setLogoLinkHref(event.target.value)}
+            placeholder="https://example.com"
+            dir="ltr"
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">

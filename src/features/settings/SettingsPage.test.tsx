@@ -156,4 +156,37 @@ describe('SettingsPage', () => {
     expect(payload.footer_copyright_text).toBe('جميع الحقوق محفوظة لشركتي © {year}')
     expect(payload.footer_support_text).toBe('نص دعم مخصص')
   })
+
+  it('loads and saves the logo link URL', async () => {
+    mockGetSiteSettings.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      logo_path: null,
+      logo_link_href: 'https://example.test/organization',
+      nav_links: [],
+      footer_links: [],
+      footer_badges: [],
+      updated_at: '2026-01-01T00:00:00Z',
+    })
+
+    renderSettingsPage()
+    const logoLinkInput = await screen.findByDisplayValue('https://example.test/organization')
+
+    fireEvent.change(logoLinkInput, { target: { value: 'https://example.test/new-page' } })
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.logo_link_href).toBe('https://example.test/new-page')
+  })
+
+  it('saves a null logo link when left empty', async () => {
+    renderSettingsPage()
+    await screen.findByDisplayValue('عن النظام')
+
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.logo_link_href).toBeNull()
+  })
 })

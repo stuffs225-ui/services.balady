@@ -98,6 +98,96 @@ export async function exportEmployeeCardPdf({
   return { warnings }
 }
 
+/**
+ * A second, faster PDF export path: composites the card on a <canvas>
+ * (the same fast, already-proven pipeline "تنزيل كصورة" uses — background,
+ * calibrated photo, QR, then text, all awaited before anything is drawn)
+ * instead of the slower DOM-clone-then-rasterize path exportEmployeeCardPdf
+ * above uses. Because renderEmployeeCardToCanvas only ever returns once
+ * every element has actually been composited, this can never start
+ * downloading a card missing its photo or other pieces.
+ *
+ * Also hands the finished PDF to the OS share sheet (navigator.share) when
+ * available, instead of jsPDF's own blob-URL download: on iOS Safari that
+ * blob-URL approach opens the PDF in the browser's own inline viewer first
+ * (a separate "page" the admin then has to manually save from), while the
+ * share sheet saves/shares it directly with no extra step. Falls back to a
+ * normal download where file sharing isn't supported (most desktop
+ * browsers).
+ */
+export async function exportEmployeeCardPdfFast({
+  templateUrl,
+  backTemplateUrl,
+  employee,
+  publicUrl,
+  layout,
+  fileName,
+}: ExportEmployeeCardPdfOptions): Promise<ExportEmployeeCardPdfResult> {
+  const { renderEmployeeCardToCanvas } = await import('./employeeCardCanvas')
+  const { dataUrl: frontDataUrl, warnings } = await renderEmployeeCardToCanvas(
+    templateUrl,
+    employee,
+    publicUrl,
+    layout,
+    HIGH_RES_SCALE,
+  )
+
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: [CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM],
+  })
+  pdf.addImage(frontDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
+
+  if (backTemplateUrl) {
+    try {
+      const backDataUrl = await imageUrlToCoverCanvasDataUrl(backTemplateUrl, HIGH_RES_SCALE)
+      pdf.addPage([CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM], 'landscape')
+      pdf.addImage(backDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
+    } catch (error) {
+      warnings.push(`الصفحة الثانية (التعليمات): ${errorMessage(error)}`)
+    }
+  }
+
+  await savePdfDirectly(pdf, fileName || cardFileName(employee, 'pdf'))
+  return { warnings }
+}
+
+/**
+ * Shares/saves the PDF via the OS share sheet when the browser supports
+ * sharing files (notably iOS Safari) — this is what actually saves the
+ * file with no intermediate viewer page. Falls back to the classic
+ * blob-URL anchor download otherwise.
+ */
+async function savePdfDirectly(pdf: jsPDF, fileName: string): Promise<void> {
+  const blob = pdf.output('blob') as Blob
+
+  if (typeof navigator.canShare === 'function' && typeof navigator.share === 'function') {
+    const file = new File([blob], fileName, { type: 'application/pdf' })
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] })
+        return
+      } catch (error) {
+        // The admin cancelling the native share sheet throws AbortError —
+        // not a failure, nothing further to do. Any other error falls
+        // through to the direct download below instead of failing the
+        // whole export.
+        if (error instanceof Error && error.name === 'AbortError') return
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 export type ExportEmployeeCardImageResult = ExportEmployeeCardPdfResult
 
 /**

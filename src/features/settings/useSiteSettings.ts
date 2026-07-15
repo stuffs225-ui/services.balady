@@ -18,6 +18,7 @@ export type ResolvedFooterBadge = {
 
 export type ResolvedSiteBranding = {
   logoUrl: string | null
+  logoLinkHref: string | null
   navLinks: NavLinkSetting[]
   footerLinks: NavLinkSetting[]
   footerBadges: ResolvedFooterBadge[]
@@ -43,6 +44,7 @@ export type ResolvedSiteBranding = {
 export function useSiteSettings(): ResolvedSiteBranding {
   const [state, setState] = useState<ResolvedSiteBranding>({
     logoUrl: null,
+    logoLinkHref: null,
     navLinks: defaultNavLinks,
     footerLinks: defaultFooterLinks,
     footerBadges: [],
@@ -70,6 +72,7 @@ export function useSiteSettings(): ResolvedSiteBranding {
 
         setState({
           logoUrl: getBrandingAssetUrl(settings?.logo_path ?? null),
+          logoLinkHref: settings?.logo_link_href ?? null,
           navLinks: settings?.nav_links?.length ? settings.nav_links : defaultNavLinks,
           footerLinks: settings?.footer_links?.length ? settings.footer_links : defaultFooterLinks,
           footerBadges: (settings?.footer_badges ?? []).map((badge) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getEmployeePhotoUrl } from '../../features/employees/api'
 import { generateQrDataUrl } from '../../lib/qrcode'
 import { displayDateOnly } from '../../lib/dates'
@@ -359,10 +359,19 @@ function TextOverlayBox({
   onPointerDownResize,
 }: TextOverlayBoxProps) {
   const justify = box.align === 'left' ? 'flex-start' : box.align === 'center' ? 'center' : 'flex-end'
+  // The full-name field is never clipped — it always renders at its exact
+  // configured font size, so a long name is left free to extend past the
+  // box rather than being cut off. Every other field keeps the usual
+  // overflow-hidden + ellipsis truncation.
+  const overflowClass = isFullName ? '' : ' overflow-hidden'
 
   return (
     <div
-      className={calibrationMode ? `absolute flex cursor-move items-center overflow-hidden ${selected ? 'outline outline-2 outline-brand-primary' : 'outline outline-1 outline-dashed outline-white/70'}` : 'absolute flex items-center overflow-hidden'}
+      className={
+        (calibrationMode
+          ? `absolute flex cursor-move items-center${overflowClass} ${selected ? 'outline outline-2 outline-brand-primary' : 'outline outline-1 outline-dashed outline-white/70'}`
+          : `absolute flex items-center${overflowClass}`) + (isFullName ? ' z-10' : '')
+      }
       style={{
         left: `${box.x}%`,
         top: `${box.y}%`,
@@ -411,35 +420,19 @@ function TextOverlayBox({
   )
 }
 
+// Always renders at exactly the configured font size, regardless of the
+// text's length — deliberately does not shrink to fit the box. If a long
+// name doesn't fit, the admin adjusts the font size or the box's width
+// from the calibration settings themselves rather than the renderer
+// silently shrinking it.
 function AutoFitText({ text, fontSize, color }: { text: string; fontSize: number; color: string }) {
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const spanRef = useRef<HTMLSpanElement>(null)
-  const [fittedSize, setFittedSize] = useState(fontSize)
-
-  useLayoutEffect(() => {
-    const wrapper = wrapperRef.current
-    const span = spanRef.current
-    if (!wrapper || !span) return
-
-    let size = fontSize
-    span.style.fontSize = `${size}px`
-    let guard = 0
-    while (span.scrollWidth > wrapper.clientWidth && size > fontSize * 0.4 && guard < 40) {
-      size -= 1
-      span.style.fontSize = `${size}px`
-      guard += 1
-    }
-    setFittedSize(size)
-  }, [text, fontSize])
-
   return (
-    <div ref={wrapperRef} className="w-full overflow-hidden" dir="rtl">
+    <div className="w-full" dir="rtl">
       <span
-        ref={spanRef}
         className="block whitespace-nowrap"
         style={{
           fontFamily: FONT_STACK,
-          fontSize: fittedSize,
+          fontSize,
           fontWeight: 400,
           color,
           textAlign: 'right',

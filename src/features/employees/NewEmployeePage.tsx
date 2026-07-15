@@ -64,6 +64,7 @@ function NewEmployeePage() {
         submitLabel="حفظ"
         onSubmit={handleSubmit}
         formError={formError}
+        prioritizeManualEntry
       />
     </div>
   )

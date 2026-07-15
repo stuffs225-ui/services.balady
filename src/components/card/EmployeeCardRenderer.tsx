@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getEmployeePhotoUrl } from '../../features/employees/api'
 import { generateQrDataUrl } from '../../lib/qrcode'
+import { formatCardDate } from '../../lib/dates'
 import {
   TEMPLATE_NATURAL_WIDTH,
   TEMPLATE_NATURAL_HEIGHT,
@@ -15,6 +16,10 @@ type FieldKey = keyof EmployeeCardLayout
 
 const FONT_STACK = 'Arial, Tahoma, sans-serif'
 
+// Single deterministic date formatter — used everywhere the card is
+// rendered or exported (preview, calibration, print, image/PDF export all
+// share this one component), so a date is never independently formatted
+// (or mis-formatted) in more than one place.
 function fieldValue(employee: Employee, field: TextFieldKey): string {
   switch (field) {
     case 'fullName':
@@ -28,9 +33,9 @@ function fieldValue(employee: Employee, field: TextFieldKey): string {
     case 'profession':
       return employee.profession
     case 'issueDate':
-      return employee.issue_date_hijri || employee.issue_date_gregorian
+      return employee.issue_date_hijri || formatCardDate(employee.issue_date_gregorian)
     case 'expiryDate':
-      return employee.expiry_date_hijri || employee.expiry_date_gregorian
+      return employee.expiry_date_hijri || formatCardDate(employee.expiry_date_gregorian)
     case 'educationProgramType':
       return employee.program_type || ''
     case 'educationProgramExpiry':
@@ -341,8 +346,15 @@ function TextOverlayBox({
             fontSize,
             fontWeight: 400,
             color: box.color,
+            direction: isNumeric ? 'ltr' : 'rtl',
             textAlign: 'right',
-            unicodeBidi: isNumeric ? 'plaintext' : undefined,
+            // isolate (not plaintext) keeps digit/date sequences fully
+            // insulated from the surrounding rtl bidi context, instead of
+            // guessing a base direction from the string's first strong
+            // character — plaintext has no strong character to anchor on
+            // in a pure digit/date string, which is how a value like
+            // 2037-07-15 could end up visually reordered.
+            unicodeBidi: isNumeric ? 'isolate' : undefined,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             maxWidth: '100%',

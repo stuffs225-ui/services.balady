@@ -3,6 +3,8 @@ import { createElement } from 'react'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import EmployeeCardRenderer from '../components/card/EmployeeCardRenderer'
+import { getEmployeePhotoUrl } from '../features/employees/api'
+import { generateQrDataUrl } from './qrcode'
 import {
   TEMPLATE_NATURAL_WIDTH,
   TEMPLATE_NATURAL_HEIGHT,
@@ -60,6 +62,16 @@ async function renderCardFaceToDataUrl(
   publicUrl: string,
   layout: EmployeeCardLayout,
 ): Promise<string> {
+  // Resolve the photo/QR *before* mounting, and pass them in as fixed
+  // values. Previously these were fetched by the renderer's own effects
+  // after mount, racing a fixed setTimeout — on a slow photo fetch, the
+  // <img> for the photo simply didn't exist yet when the DOM was captured,
+  // so it silently dropped out of the exported card.
+  const [photoUrl, qrDataUrl] = await Promise.all([
+    getEmployeePhotoUrl(employee.employee_photo_path),
+    generateQrDataUrl(publicUrl),
+  ])
+
   // html-to-image clones the target node's own inline style, so hiding it
   // directly (position:fixed with an offset, opacity:0, ...) gets baked into
   // the capture and produces a blank image. Instead, clip it via an
@@ -87,13 +99,14 @@ async function renderCardFaceToDataUrl(
         publicUrl,
         layout,
         exportMode: true,
+        photoUrlOverride: photoUrl,
+        qrDataUrlOverride: qrDataUrl,
       }),
     )
 
-    // Give the async photo/QR effects time to resolve and re-render before
-    // capturing, then wait for every image currently in the DOM to finish
-    // loading.
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    // Let the initial paint settle, then wait for every image in the DOM
+    // (now all present from the very first render) to finish loading.
+    await new Promise((resolve) => setTimeout(resolve, 100))
     await waitForImages(container)
 
     // html-to-image embeds images by fetching them itself while building the
@@ -142,6 +155,35 @@ async function fetchAsDataUrl(url: string): Promise<string> {
   })
 }
 
+/** Draws an already-loaded <img> element onto a canvas and reads it back as a data: URI. */
+function canvasDataUrlFromImageElement(img: HTMLImageElement): string {
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth
+  canvas.height = img.naturalHeight
+  const ctx = canvas.getContext('2d')
+  if (!ctx || canvas.width === 0 || canvas.height === 0) {
+    throw new Error('تعذر قراءة بيانات الصورة')
+  }
+  ctx.drawImage(img, 0, 0)
+  return canvas.toDataURL('image/png')
+}
+
+/**
+ * Best-effort: inline a remote image as a data: URI. Prefers reading the
+ * pixels straight off the element that already finished loading on screen —
+ * Supabase Storage URLs have been observed to render fine as an <img> while
+ * a fresh fetch() of the exact same URL fails (redirect/CORS quirks a plain
+ * image load tolerates but fetch() does not). Falls back to a raw fetch if
+ * that canvas readback fails for a genuinely CORS-tainted image.
+ */
+async function toDataUrlRobust(url: string, loadedElement: HTMLImageElement): Promise<string> {
+  try {
+    return canvasDataUrlFromImageElement(loadedElement)
+  } catch {
+    return await fetchAsDataUrl(url)
+  }
+}
+
 /** Replaces every non-data-URI <img> in the container with an inlined data: URI, in place. */
 async function inlineRemoteImages(container: HTMLElement): Promise<void> {
   const imgs = Array.from(container.querySelectorAll('img'))
@@ -150,7 +192,7 @@ async function inlineRemoteImages(container: HTMLElement): Promise<void> {
     imgs.map(async (img) => {
       if (img.src.startsWith('data:')) return
       try {
-        const dataUrl = await fetchAsDataUrl(img.src)
+        const dataUrl = await toDataUrlRobust(img.src, img)
         await new Promise<void>((resolve) => {
           img.onload = () => resolve()
           img.onerror = () => resolve()
@@ -164,16 +206,33 @@ async function inlineRemoteImages(container: HTMLElement): Promise<void> {
   )
 }
 
+/**
+ * Loads an image via a normal (CORS-friendly) <img> load first — the same
+ * path that already renders these templates correctly on screen — and only
+ * falls back to a raw fetch + data: URI if that fails outright.
+ */
+async function loadImageElementRobust(url: string): Promise<HTMLImageElement> {
+  try {
+    return await loadImageElement(url)
+  } catch {
+    const dataUrl = await fetchAsDataUrl(url)
+    return await loadImageElement(dataUrl)
+  }
+}
+
+function loadImageElement(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('تعذر تحميل صورة قالب الصفحة الثانية'))
+    image.src = url
+  })
+}
+
 /** Loads a static image URL and draws it edge-to-edge (cover-fit) onto a fixed-size canvas. */
 async function imageUrlToCoverCanvasDataUrl(url: string): Promise<string> {
-  const dataUrl = await fetchAsDataUrl(url)
-  const image = new Image()
-
-  await new Promise<void>((resolve, reject) => {
-    image.onload = () => resolve()
-    image.onerror = () => reject(new Error('تعذر تحميل صورة قالب الصفحة الثانية'))
-    image.src = dataUrl
-  })
+  const image = await loadImageElementRobust(url)
 
   const canvas = document.createElement('canvas')
   canvas.width = TEMPLATE_NATURAL_WIDTH

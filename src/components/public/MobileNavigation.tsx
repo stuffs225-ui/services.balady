@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { navLinks as defaultNavLinks, primaryActionLink, searchLink } from '../../config/siteLinks'
 import type { NavLinkSetting } from '../../types/database'
 
@@ -7,30 +8,81 @@ type MobileNavigationProps = {
 }
 
 function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigationProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  // Tracks which isOpen value expandedIndex was last computed for, so
+  // closing the whole mobile nav also collapses any open dropdown — done
+  // during render (not inside an effect) per this app's established
+  // render-time-adjustment pattern.
+  const [syncedIsOpen, setSyncedIsOpen] = useState(isOpen)
+
+  if (isOpen !== syncedIsOpen) {
+    setSyncedIsOpen(isOpen)
+    if (!isOpen) setExpandedIndex(null)
+  }
+
   return (
     <nav
       id="public-mobile-navigation"
       aria-label="التنقل الرئيسي"
       className={`overflow-hidden bg-surface transition-[max-height,opacity] duration-200 ease-out ${
-        isOpen ? 'max-h-[640px] opacity-100' : 'max-h-0 opacity-0'
+        isOpen ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
       }`}
     >
       <ul>
         {navLinks.map((link, index) => {
           const isActive = index === 1
+          const hasSections = Boolean(link.sections?.length)
+          const isExpanded = hasSections && expandedIndex === index
+
           return (
-            <li key={link.href} className="border-b border-divider last:border-b-0">
-              <a
-                href={link.href}
-                className={`flex min-h-[64px] items-center justify-between px-7 text-lg font-medium sm:text-xl ${
-                  isActive
-                    ? 'bg-brand-primary text-white'
-                    : 'text-text-primary hover:bg-surface-muted'
-                }`}
-              >
-                {link.label}
-                <ChevronIcon />
-              </a>
+            <li key={`${link.label}-${index}`} className="border-b border-divider last:border-b-0">
+              {hasSections ? (
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpandedIndex((prev) => (prev === index ? null : index))}
+                  className={`flex min-h-[64px] w-full items-center justify-between px-7 text-lg font-medium sm:text-xl ${
+                    isExpanded ? 'bg-surface-muted text-text-primary' : 'text-text-primary hover:bg-surface-muted'
+                  }`}
+                >
+                  {link.label}
+                  <DropdownChevronIcon open={isExpanded} />
+                </button>
+              ) : (
+                <a
+                  href={link.href}
+                  className={`flex min-h-[64px] items-center justify-between px-7 text-lg font-medium sm:text-xl ${
+                    isActive ? 'bg-brand-primary text-white' : 'text-text-primary hover:bg-surface-muted'
+                  }`}
+                >
+                  {link.label}
+                  <ChevronIcon />
+                </a>
+              )}
+
+              {hasSections && isExpanded && (
+                <div className="border-t-2 border-text-primary bg-surface-muted/40 px-7 py-6">
+                  {link.sections!.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="mb-6 last:mb-0">
+                      <h3 className="mb-3 text-xl font-bold text-brand-primary sm:text-2xl">
+                        {section.title}
+                      </h3>
+                      <ul>
+                        {section.links.map((sectionLink, linkIndex) => (
+                          <li key={linkIndex} className="mb-3 last:mb-0">
+                            <a
+                              href={sectionLink.href}
+                              className="block text-lg text-text-primary hover:underline sm:text-xl"
+                            >
+                              {sectionLink.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
             </li>
           )
         })}
@@ -79,6 +131,27 @@ function ChevronIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M15 6l-6 6 6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function DropdownChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+    >
+      <path
+        d="M6 9l6 6 6-6"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"

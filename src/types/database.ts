@@ -66,9 +66,26 @@ export type PublicCertificate = {
   status: CertificateStatus
 }
 
+export type NavMenuLink = {
+  label: string
+  href: string
+}
+
+export type NavMenuSection = {
+  title: string
+  links: NavMenuLink[]
+}
+
 export type NavLinkSetting = {
   label: string
   href: string
+  /**
+   * When present (and non-empty), this nav item becomes a dropdown: tapping
+   * it expands this list of titled sections instead of navigating to href.
+   * href is then unused, kept only so the item can be converted back to a
+   * plain link without losing what was typed there.
+   */
+  sections?: NavMenuSection[]
 }
 
 export type EmployeeCardBox = {

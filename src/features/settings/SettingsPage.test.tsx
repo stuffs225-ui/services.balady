@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from './SettingsPage'
@@ -177,6 +177,95 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
     const payload = mockUpdateSiteSettings.mock.calls[0][0]
     expect(payload.logo_link_href).toBe('https://example.test/new-page')
+  })
+
+  it('converts a nav link into a dropdown with sections and sub-links, and saves it without needing an href on the item itself', async () => {
+    renderSettingsPage()
+    const label = await screen.findByDisplayValue('عن النظام')
+    const navSection = label.closest('section')!
+
+    // The "convert" button itself adds the first (empty) section.
+    await userEvent.click(
+      within(navSection).getByRole('button', {
+        name: 'تحويل لقائمة منسدلة (تظهر عند الضغط بدل الانتقال لرابط)',
+      }),
+    )
+    await userEvent.type(within(navSection).getByPlaceholderText('عنوان القسم'), 'الصفحات الشخصية')
+
+    await userEvent.click(within(navSection).getByRole('button', { name: 'إضافة رابط للقسم' }))
+    await userEvent.type(within(navSection).getByPlaceholderText('نص الرابط'), 'إدارة الطلبات')
+    await userEvent.type(within(navSection).getByPlaceholderText('الرابط'), '/requests')
+
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.nav_links).toEqual([
+      {
+        label: 'عن النظام',
+        href: '/about',
+        sections: [{ title: 'الصفحات الشخصية', links: [{ label: 'إدارة الطلبات', href: '/requests' }] }],
+      },
+    ])
+  })
+
+  it('drops empty sections and empty sub-links when saving a dropdown nav item', async () => {
+    renderSettingsPage()
+    const label = await screen.findByDisplayValue('عن النظام')
+    const navSection = label.closest('section')!
+
+    // The "convert" button adds the first (empty) section; one more click
+    // adds a second, so exactly one of the two ends up filled in.
+    await userEvent.click(
+      within(navSection).getByRole('button', {
+        name: 'تحويل لقائمة منسدلة (تظهر عند الضغط بدل الانتقال لرابط)',
+      }),
+    )
+    await userEvent.click(within(navSection).getByRole('button', { name: 'إضافة قسم' }))
+    const sectionTitleInputs = within(navSection).getAllByPlaceholderText('عنوان القسم')
+    await userEvent.type(sectionTitleInputs[0], 'قسم فيه رابط')
+    await userEvent.click(within(navSection).getAllByRole('button', { name: 'إضافة رابط للقسم' })[0])
+    await userEvent.type(within(navSection).getAllByPlaceholderText('نص الرابط')[0], 'رابط تجريبي')
+    await userEvent.type(within(navSection).getAllByPlaceholderText('الرابط')[0], '/example')
+
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.nav_links).toEqual([
+      {
+        label: 'عن النظام',
+        href: '/about',
+        sections: [{ title: 'قسم فيه رابط', links: [{ label: 'رابط تجريبي', href: '/example' }] }],
+      },
+    ])
+  })
+
+  it('converts a dropdown nav item back to a plain link', async () => {
+    mockGetSiteSettings.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      logo_path: null,
+      nav_links: [
+        {
+          label: 'الخدمات',
+          href: '',
+          sections: [{ title: 'قسم', links: [{ label: 'رابط', href: '/x' }] }],
+        },
+      ],
+      footer_links: [],
+      footer_badges: [],
+      updated_at: '2026-01-01T00:00:00Z',
+    })
+
+    renderSettingsPage()
+    const label = await screen.findByDisplayValue('الخدمات')
+    const navSection = label.closest('section')!
+    expect(within(navSection).getByPlaceholderText('عنوان القسم')).toBeInTheDocument()
+
+    await userEvent.click(within(navSection).getByRole('button', { name: 'تحويل لرابط مباشر' }))
+
+    expect(within(navSection).queryByPlaceholderText('عنوان القسم')).not.toBeInTheDocument()
+    expect(within(navSection).getByPlaceholderText('الرابط')).toBeInTheDocument()
   })
 
   it('saves a null logo link when left empty', async () => {

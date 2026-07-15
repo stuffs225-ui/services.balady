@@ -9,7 +9,7 @@ import {
   defaultFooterSupportText,
   siteIdentity,
 } from '../../config/siteLinks'
-import type { NavLinkSetting, FooterBadgeSetting } from '../../types/database'
+import type { NavLinkSetting, NavMenuSection, FooterBadgeSetting } from '../../types/database'
 
 type BadgeDraft = {
   file: File | null
@@ -17,6 +17,32 @@ type BadgeDraft = {
   imagePath: string | null
   alt: string
   href: string
+}
+
+/**
+ * Drops blank sections/sub-links before saving, and keeps a nav link only
+ * if it has a label plus either a direct href or at least one populated
+ * dropdown section — a dropdown-style item never needs its own href.
+ */
+function cleanNavLinks(links: NavLinkSetting[]): NavLinkSetting[] {
+  return links
+    .map((link) => {
+      const sections = (link.sections ?? [])
+        .map((section) => ({
+          title: section.title.trim(),
+          links: section.links
+            .map((sectionLink) => ({ label: sectionLink.label.trim(), href: sectionLink.href.trim() }))
+            .filter((sectionLink) => sectionLink.label && sectionLink.href),
+        }))
+        .filter((section) => section.title && section.links.length > 0)
+
+      return {
+        label: link.label.trim(),
+        href: link.href.trim(),
+        ...(sections.length > 0 ? { sections } : {}),
+      }
+    })
+    .filter((link) => link.label && (link.href || Boolean(link.sections?.length)))
 }
 
 function toBadgeDrafts(badges: FooterBadgeSetting[]): BadgeDraft[] {
@@ -98,6 +124,63 @@ function SettingsPage() {
     setNavLinks((prev) => prev.map((link, i) => (i === index ? { ...link, ...patch } : link)))
   }
 
+  function updateNavLinkSections(
+    navIndex: number,
+    updater: (sections: NavMenuSection[]) => NavMenuSection[],
+  ) {
+    setNavLinks((prev) =>
+      prev.map((link, i) => (i === navIndex ? { ...link, sections: updater(link.sections ?? []) } : link)),
+    )
+  }
+
+  function addNavLinkSection(navIndex: number) {
+    updateNavLinkSections(navIndex, (sections) => [...sections, { title: '', links: [] }])
+  }
+
+  function removeNavLinkSection(navIndex: number, sectionIndex: number) {
+    updateNavLinkSections(navIndex, (sections) => sections.filter((_, i) => i !== sectionIndex))
+  }
+
+  function updateNavLinkSectionTitle(navIndex: number, sectionIndex: number, title: string) {
+    updateNavLinkSections(navIndex, (sections) =>
+      sections.map((section, i) => (i === sectionIndex ? { ...section, title } : section)),
+    )
+  }
+
+  function addSectionLink(navIndex: number, sectionIndex: number) {
+    updateNavLinkSections(navIndex, (sections) =>
+      sections.map((section, i) =>
+        i === sectionIndex ? { ...section, links: [...section.links, { label: '', href: '' }] } : section,
+      ),
+    )
+  }
+
+  function updateSectionLink(
+    navIndex: number,
+    sectionIndex: number,
+    linkIndex: number,
+    patch: { label?: string; href?: string },
+  ) {
+    updateNavLinkSections(navIndex, (sections) =>
+      sections.map((section, i) =>
+        i === sectionIndex
+          ? {
+              ...section,
+              links: section.links.map((link, li) => (li === linkIndex ? { ...link, ...patch } : link)),
+            }
+          : section,
+      ),
+    )
+  }
+
+  function removeSectionLink(navIndex: number, sectionIndex: number, linkIndex: number) {
+    updateNavLinkSections(navIndex, (sections) =>
+      sections.map((section, i) =>
+        i === sectionIndex ? { ...section, links: section.links.filter((_, li) => li !== linkIndex) } : section,
+      ),
+    )
+  }
+
   function updateFooterLink(index: number, patch: Partial<NavLinkSetting>) {
     setFooterLinks((prev) => prev.map((link, i) => (i === index ? { ...link, ...patch } : link)))
   }
@@ -134,7 +217,7 @@ function SettingsPage() {
       await updateSiteSettings({
         ...(logoPath !== undefined ? { logo_path: logoPath } : {}),
         logo_link_href: logoLinkHref || null,
-        nav_links: navLinks.filter((link) => link.label && link.href),
+        nav_links: cleanNavLinks(navLinks),
         footer_links: footerLinks.filter((link) => link.label && link.href),
         footer_badges: resolvedBadges,
         footer_copyright_text: footerCopyrightText,
@@ -322,30 +405,134 @@ function SettingsPage() {
             إضافة رابط
           </button>
         </div>
-        {navLinks.map((link, index) => (
-          <div key={index} className="mb-3 flex gap-3">
-            <input
-              value={link.label}
-              onChange={(event) => updateNavLink(index, { label: event.target.value })}
-              placeholder="النص"
-              className="w-1/3 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
-            />
-            <input
-              value={link.href}
-              onChange={(event) => updateNavLink(index, { href: event.target.value })}
-              placeholder="الرابط"
-              dir="ltr"
-              className="flex-1 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => setNavLinks((prev) => prev.filter((_, i) => i !== index))}
-              className="rounded-button border border-expired px-3 text-sm text-expired hover:bg-red-50"
-            >
-              حذف
-            </button>
-          </div>
-        ))}
+        {navLinks.map((link, index) => {
+          const hasSections = Boolean(link.sections?.length)
+
+          return (
+            <div key={index} className="mb-4 rounded-field border border-divider p-3">
+              <div className="mb-3 flex gap-3">
+                <input
+                  value={link.label}
+                  onChange={(event) => updateNavLink(index, { label: event.target.value })}
+                  placeholder="النص"
+                  className="w-1/3 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+                />
+                {!hasSections && (
+                  <input
+                    value={link.href}
+                    onChange={(event) => updateNavLink(index, { href: event.target.value })}
+                    placeholder="الرابط"
+                    dir="ltr"
+                    className="flex-1 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setNavLinks((prev) => prev.filter((_, i) => i !== index))}
+                  className="rounded-button border border-expired px-3 text-sm text-expired hover:bg-red-50"
+                >
+                  حذف
+                </button>
+              </div>
+
+              {hasSections ? (
+                <div className="rounded-field bg-surface-muted p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-bold text-text-secondary">
+                      قائمة منسدلة — يظهر هذا بدل الرابط عند الضغط على "{link.label || 'هذا العنصر'}"
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => updateNavLink(index, { sections: undefined })}
+                      className="text-xs font-bold text-expired hover:underline"
+                    >
+                      تحويل لرابط مباشر
+                    </button>
+                  </div>
+
+                  {link.sections!.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="mb-3 rounded-field border border-divider bg-surface p-3">
+                      <div className="mb-2 flex gap-3">
+                        <input
+                          value={section.title}
+                          onChange={(event) =>
+                            updateNavLinkSectionTitle(index, sectionIndex, event.target.value)
+                          }
+                          placeholder="عنوان القسم"
+                          className="flex-1 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm font-bold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNavLinkSection(index, sectionIndex)}
+                          className="rounded-button border border-expired px-3 text-sm text-expired hover:bg-red-50"
+                        >
+                          حذف القسم
+                        </button>
+                      </div>
+
+                      {section.links.map((sectionLink, linkIndex) => (
+                        <div key={linkIndex} className="mb-2 flex gap-3">
+                          <input
+                            value={sectionLink.label}
+                            onChange={(event) =>
+                              updateSectionLink(index, sectionIndex, linkIndex, {
+                                label: event.target.value,
+                              })
+                            }
+                            placeholder="نص الرابط"
+                            className="w-1/3 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={sectionLink.href}
+                            onChange={(event) =>
+                              updateSectionLink(index, sectionIndex, linkIndex, {
+                                href: event.target.value,
+                              })
+                            }
+                            placeholder="الرابط"
+                            dir="ltr"
+                            className="flex-1 rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSectionLink(index, sectionIndex, linkIndex)}
+                            className="rounded-button border border-expired px-3 text-sm text-expired hover:bg-red-50"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => addSectionLink(index, sectionIndex)}
+                        className="mt-1 rounded-button border border-divider px-3 py-1 text-xs font-bold hover:bg-surface-muted"
+                      >
+                        إضافة رابط للقسم
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => addNavLinkSection(index)}
+                    className="rounded-button border border-divider px-3 py-1.5 text-xs font-bold hover:bg-surface-muted"
+                  >
+                    إضافة قسم
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => addNavLinkSection(index)}
+                  className="text-xs font-bold text-brand-primary hover:underline"
+                >
+                  تحويل لقائمة منسدلة (تظهر عند الضغط بدل الانتقال لرابط)
+                </button>
+              )}
+            </div>
+          )
+        })}
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">

@@ -1,7 +1,20 @@
 import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
 import { generatePublicToken } from '../../lib/token'
+import { normalizeDateOnly } from '../../lib/dates'
 import type { Employee, EmployeeInsert, EmployeeUpdate } from '../../types/database'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
+
+/**
+ * Defense-in-depth: the form only ever produces a real "YYYY-MM-DD" value
+ * for these fields (or blocks submission via schema validation), but never
+ * write anything else to Supabase even if that assumption is ever broken
+ * upstream.
+ */
+function requireDateOnly(value: string, label: string): string {
+  const normalized = normalizeDateOnly(value)
+  if (!normalized) throw new Error(`${label} غير صالح`)
+  return normalized
+}
 
 export type EmployeeSearchParams = {
   query?: string
@@ -66,9 +79,9 @@ function toInsertPayload(values: EmployeeFormValues, token: string): EmployeeIns
     establishment_number: values.establishmentNumber || null,
     program_type: values.programType || null,
     issue_date_hijri: values.issueDateHijri || null,
-    issue_date_gregorian: values.issueDateGregorian,
+    issue_date_gregorian: requireDateOnly(values.issueDateGregorian, 'تاريخ إصدار الشهادة الصحية ميلادي'),
     expiry_date_hijri: values.expiryDateHijri || null,
-    expiry_date_gregorian: values.expiryDateGregorian,
+    expiry_date_gregorian: requireDateOnly(values.expiryDateGregorian, 'تاريخ نهاية الشهادة الصحية ميلادي'),
     program_completion_date_hijri: values.programCompletionDateHijri || null,
     employee_photo_path: null,
     is_active: true,
@@ -116,9 +129,9 @@ export async function updateEmployee(
     establishment_number: values.establishmentNumber || null,
     program_type: values.programType || null,
     issue_date_hijri: values.issueDateHijri || null,
-    issue_date_gregorian: values.issueDateGregorian,
+    issue_date_gregorian: requireDateOnly(values.issueDateGregorian, 'تاريخ إصدار الشهادة الصحية ميلادي'),
     expiry_date_hijri: values.expiryDateHijri || null,
-    expiry_date_gregorian: values.expiryDateGregorian,
+    expiry_date_gregorian: requireDateOnly(values.expiryDateGregorian, 'تاريخ نهاية الشهادة الصحية ميلادي'),
     program_completion_date_hijri: values.programCompletionDateHijri || null,
     employee_photo_path: photoPath,
   }

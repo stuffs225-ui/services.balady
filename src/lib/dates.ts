@@ -1,7 +1,47 @@
 export const CERTIFICATE_VALIDITY_DAYS = 365
 
-export function todayISO(): string {
-  return toISODate(new Date())
+/**
+ * Normalizes a Gregorian date-only value to the canonical storage shape
+ * "YYYY-MM-DD". Accepts either that shape as-is, or the "YYYY/MM/DD"
+ * display shape (converted to dashes). Anything else — including a
+ * localized string like "Jul 15 2026" — returns "" rather than guessing,
+ * since that can't be converted unambiguously.
+ */
+export function normalizeDateOnly(value?: string | null): string {
+  if (!value) return ''
+
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) return value
+
+  const slash = value.match(/^(\d{4})\/(\d{2})\/(\d{2})$/)
+  if (slash) {
+    return `${slash[1]}-${slash[2]}-${slash[3]}`
+  }
+
+  return ''
+}
+
+/** Displays a stored date-only value ("YYYY-MM-DD" or "YYYY/MM/DD") as "YYYY/MM/DD". */
+export function displayDateOnly(value?: string | null): string {
+  const normalized = normalizeDateOnly(value)
+  if (!normalized) return '–'
+
+  const [year, month, day] = normalized.split('-')
+  return `${year}/${month}/${day}`
+}
+
+/**
+ * Today's date in the canonical "YYYY-MM-DD" storage shape, read from
+ * local date parts (never toISOString().slice(0, 10), which converts to
+ * UTC first and can shift the date by a day near midnight).
+ */
+export function todayDateOnly(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 export function addDaysISO(iso: string, days: number): string {
@@ -29,45 +69,6 @@ export function gregorianToHijri(gregorianISO: string): string {
   if (!year || !month || !day) return ''
 
   return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`
-}
-
-/** Displays a stored "YYYY-MM-DD" Gregorian date as "YYYY/MM/DD". */
-export function formatGregorianDisplay(iso: string | null | undefined): string {
-  if (!iso) return ''
-  return iso.replaceAll('-', '/')
-}
-
-/**
- * Single deterministic Gregorian date formatter for every card surface
- * (preview, calibration, print, high-res image export, PDF export) —
- * never locale-dependent (no toLocaleDateString/Intl month names), so it
- * can't render a stored date as something like "Jul 2037 15". An ISO
- * "YYYY-MM-DD" value is read directly out of the string, without going
- * through Date/timezone conversion at all, so the displayed date always
- * matches exactly what's stored.
- */
-export function formatCardDate(value?: string | null): string {
-  if (!value) return '–'
-
-  // Preserve ISO date values without timezone conversion.
-  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
-
-  if (isoMatch) {
-    const [, year, month, day] = isoMatch
-    return `${year}/${month}/${day}`
-  }
-
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return '–'
-  }
-
-  const year = String(date.getUTCFullYear())
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-
-  return `${year}/${month}/${day}`
 }
 
 function toISODate(date: Date): string {

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import EmployeeForm from './EmployeeForm'
 import { createEmployee, isUniqueViolation } from './api'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
-import { CERTIFICATE_VALIDITY_DAYS, addDaysISO, gregorianToHijri, todayISO } from '../../lib/dates'
+import { CERTIFICATE_VALIDITY_DAYS, addDaysISO, gregorianToHijri, todayDateOnly } from '../../lib/dates'
 
 function buildDefaultValues(): Partial<EmployeeFormValues> {
-  const issue = todayISO()
+  const issue = todayDateOnly()
   const expiry = addDaysISO(issue, CERTIFICATE_VALIDITY_DAYS)
   return {
     issueDateGregorian: issue,

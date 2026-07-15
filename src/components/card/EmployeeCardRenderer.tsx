@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getEmployeePhotoUrl } from '../../features/employees/api'
 import { generateQrDataUrl } from '../../lib/qrcode'
-import { formatCardDate } from '../../lib/dates'
+import { displayDateOnly } from '../../lib/dates'
 import {
   TEMPLATE_NATURAL_WIDTH,
   TEMPLATE_NATURAL_HEIGHT,
@@ -33,9 +33,9 @@ function fieldValue(employee: Employee, field: TextFieldKey): string {
     case 'profession':
       return employee.profession
     case 'issueDate':
-      return employee.issue_date_hijri || formatCardDate(employee.issue_date_gregorian)
+      return employee.issue_date_hijri || displayDateOnly(employee.issue_date_gregorian)
     case 'expiryDate':
-      return employee.expiry_date_hijri || formatCardDate(employee.expiry_date_gregorian)
+      return employee.expiry_date_hijri || displayDateOnly(employee.expiry_date_gregorian)
     case 'educationProgramType':
       return employee.program_type || ''
     case 'educationProgramExpiry':

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
-import { gregorianToHijri } from '../../lib/dates'
+import { displayDateOnly, gregorianToHijri, normalizeDateOnly } from '../../lib/dates'
 import { getEmployeeFieldSuggestions, type EmployeeSuggestionField } from './api'
 import { extractIdCardFields } from '../../lib/idCardOcr'
 
@@ -41,7 +41,7 @@ const RTL_TEXT_FIELDS = new Set<TextFieldName>([
 type FieldConfig = {
   name: TextFieldName
   label: string
-  type: 'text' | 'date' | 'select'
+  type: 'text' | 'dateOnly' | 'select'
   options?: string[]
 }
 
@@ -60,9 +60,9 @@ const FIELDS: FieldConfig[] = [
   { name: 'certificateNumber', label: 'رقم الشهادة الصحية', type: 'text' },
   { name: 'profession', label: 'المهنة', type: 'text' },
   { name: 'issueDateHijri', label: 'تاريخ إصدار الشهادة الصحية هجري', type: 'text' },
-  { name: 'issueDateGregorian', label: 'تاريخ إصدار الشهادة الصحية ميلادي', type: 'date' },
+  { name: 'issueDateGregorian', label: 'تاريخ إصدار الشهادة الصحية ميلادي', type: 'dateOnly' },
   { name: 'expiryDateHijri', label: 'تاريخ نهاية الشهادة الصحية هجري', type: 'text' },
-  { name: 'expiryDateGregorian', label: 'تاريخ نهاية الشهادة الصحية ميلادي', type: 'date' },
+  { name: 'expiryDateGregorian', label: 'تاريخ نهاية الشهادة الصحية ميلادي', type: 'dateOnly' },
   { name: 'programType', label: 'نوع البرنامج التثقيفي', type: 'text' },
   { name: 'programCompletionDateHijri', label: 'تاريخ انتهاء البرنامج التثقيفي', type: 'text' },
   { name: 'licenseNumber', label: 'رقم الرخصة', type: 'text' },
@@ -71,12 +71,75 @@ const FIELDS: FieldConfig[] = [
 ]
 
 function directionFor(field: FieldConfig): 'rtl' | 'ltr' {
-  // Native date inputs must be forced to ltr even on this rtl-wide page:
-  // left un-set, Safari/WebKit visually reorders the day/month/year
-  // segments to follow the inherited rtl context, which is how a value
-  // like 2037-07-15 ends up rendered as something like "Jul 2037 15".
-  if (field.type === 'date') return 'ltr'
+  if (field.type === 'dateOnly') return 'ltr'
   return RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : 'ltr'
+}
+
+const DATE_ONLY_INPUT_CLASS =
+  'w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-right text-text-primary outline-none focus:border-brand-primary'
+
+/**
+ * Gregorian date field that always displays and is typed as YYYY/MM/DD,
+ * regardless of device/browser locale — a native <input type="date">'s
+ * displayed text is controlled by the OS/browser (e.g. "15 Jul 2026" on
+ * some iOS locales) and can't be forced into a fixed format. The value
+ * passed to/from the parent is always the canonical "YYYY-MM-DD" (or "").
+ */
+function DateOnlyInput({
+  id,
+  value,
+  onChange,
+}: {
+  id: string
+  value: string
+  onChange: (isoValue: string) => void
+}) {
+  function toDisplayText(isoValue: string): string {
+    const formatted = displayDateOnly(isoValue)
+    return formatted === '–' ? '' : formatted
+  }
+
+  const [displayText, setDisplayText] = useState(() => toDisplayText(value))
+  // Tracks which ISO value displayText was last derived from, so an
+  // outside change (loading an employee, form reset, ID-card OCR autofill)
+  // can be detected and re-synced during render — adjusting state while
+  // rendering, rather than in an effect, avoids an extra render pass.
+  const [syncedValue, setSyncedValue] = useState(value)
+
+  if (value !== syncedValue) {
+    setSyncedValue(value)
+    setDisplayText(toDisplayText(value))
+  }
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const digits = event.target.value.replace(/\D/g, '').slice(0, 8)
+    let formatted = digits
+    if (digits.length > 4) formatted = `${digits.slice(0, 4)}/${digits.slice(4)}`
+    if (digits.length > 6) formatted = `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6)}`
+
+    setDisplayText(formatted)
+    // Only a complete YYYY/MM/DD shape normalizes to a non-empty ISO value —
+    // an in-progress value (e.g. "2026/07") intentionally clears the
+    // underlying form value until it's a full date.
+    const isoValue = normalizeDateOnly(formatted)
+    setSyncedValue(isoValue)
+    onChange(isoValue)
+  }
+
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="numeric"
+      placeholder="YYYY/MM/DD"
+      maxLength={10}
+      dir="ltr"
+      style={{ direction: 'ltr', textAlign: 'right' }}
+      value={displayText}
+      onChange={handleChange}
+      className={DATE_ONLY_INPUT_CLASS}
+    />
+  )
 }
 
 type EmployeeFormProps = {
@@ -107,6 +170,7 @@ function EmployeeForm({
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -164,6 +228,14 @@ function EmployeeForm({
       reader.readAsDataURL(file)
     } else {
       setPhotoPreview(existingPhotoUrl ?? null)
+    }
+  }
+
+  function handleGregorianDateChange(field: TextFieldName, isoValue: string) {
+    setValue(field, isoValue, { shouldValidate: true })
+    const hijriField = GREGORIAN_TO_HIJRI[field]
+    if (hijriField) {
+      setValue(hijriField, isoValue ? gregorianToHijri(isoValue) : '', { shouldValidate: true })
     }
   }
 
@@ -247,30 +319,22 @@ function EmployeeForm({
                   </option>
                 ))}
               </select>
+            ) : field.type === 'dateOnly' ? (
+              <DateOnlyInput
+                id={field.name}
+                value={(watch(field.name) as string) || ''}
+                onChange={(isoValue) => handleGregorianDateChange(field.name, isoValue)}
+              />
             ) : (
               <>
                 <input
                   id={field.name}
-                  type={field.type}
+                  type="text"
                   dir={dir}
-                  style={{ direction: dir, textAlign: field.type === 'date' ? 'left' : 'right' }}
+                  style={{ direction: dir, textAlign: 'right' }}
                   list={SUGGESTABLE_FIELDS.has(field.name) ? `${field.name}-suggestions` : undefined}
-                  {...register(
-                    field.name,
-                    GREGORIAN_TO_HIJRI[field.name]
-                      ? {
-                          onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                            const hijriField = GREGORIAN_TO_HIJRI[field.name]!
-                            setValue(hijriField, gregorianToHijri(event.target.value), {
-                              shouldValidate: true,
-                            })
-                          },
-                        }
-                      : undefined,
-                  )}
-                  className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
-                    field.type === 'date' ? '' : 'text-right'
-                  }`}
+                  {...register(field.name)}
+                  className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-right text-text-primary outline-none focus:border-brand-primary"
                 />
                 {SUGGESTABLE_FIELDS.has(field.name) && (
                   <datalist id={`${field.name}-suggestions`}>

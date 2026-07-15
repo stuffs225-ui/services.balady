@@ -291,6 +291,7 @@ function EmployeeCardRenderer({
             calibrationMode={calibrationMode}
             selected={selectedField === field}
             onPointerDownMove={(event) => startDrag(field, 'move', event)}
+            onPointerDownResize={(event) => startDrag(field, 'resize', event)}
           />
         )
       })}
@@ -343,6 +344,7 @@ type TextOverlayBoxProps = {
   calibrationMode: boolean
   selected: boolean
   onPointerDownMove: (event: React.PointerEvent) => void
+  onPointerDownResize: (event: React.PointerEvent) => void
 }
 
 function TextOverlayBox({
@@ -354,6 +356,7 @@ function TextOverlayBox({
   calibrationMode,
   selected,
   onPointerDownMove,
+  onPointerDownResize,
 }: TextOverlayBoxProps) {
   const justify = box.align === 'left' ? 'flex-start' : box.align === 'center' ? 'center' : 'flex-end'
 
@@ -397,6 +400,12 @@ function TextOverlayBox({
         >
           {value || '—'}
         </span>
+      )}
+      {calibrationMode && (
+        <div
+          className="absolute -right-1 -bottom-1 h-3 w-3 cursor-nwse-resize rounded-sm bg-brand-primary"
+          onPointerDown={onPointerDownResize}
+        />
       )}
     </div>
   )

@@ -37,38 +37,45 @@ function MobileNavigation({
     >
       <ul>
         {navLinks.map((link, index) => {
-          const isActive = index === 1
+          // Matches the reference design: the "الاستعلامات" item is the
+          // one styled as a solid filled button (by label, not position —
+          // a fixed index broke once an earlier item became a dropdown).
+          const isActive = link.label === 'الاستعلامات'
           const hasSections = Boolean(link.sections?.length)
           const isExpanded = hasSections && expandedIndex === index
 
           return (
-            <li key={`${link.label}-${index}`} className="border-b border-divider last:border-b-0">
+            <li key={`${link.label}-${index}`} className="mb-3 last:mb-0">
               {hasSections ? (
                 <button
                   type="button"
                   aria-expanded={isExpanded}
                   onClick={() => setExpandedIndex((prev) => (prev === index ? null : index))}
-                  className={`flex min-h-[64px] w-full items-center justify-between px-7 text-lg font-medium sm:text-xl ${
-                    isExpanded ? 'bg-surface-muted text-text-primary' : 'text-text-primary hover:bg-surface-muted'
+                  className={`flex min-h-[64px] w-full items-center justify-between rounded-lg px-7 text-lg font-medium sm:text-xl ${
+                    isExpanded
+                      ? 'border-2 border-sky-300 border-b-4 border-b-text-primary bg-surface-muted text-text-primary'
+                      : 'text-text-primary hover:bg-surface-muted'
                   }`}
                 >
                   {link.label}
-                  <DropdownChevronIcon open={isExpanded} />
+                  <ChevronIcon open={isExpanded} />
                 </button>
               ) : (
                 <a
                   href={link.href}
-                  className={`flex min-h-[64px] items-center justify-between px-7 text-lg font-medium sm:text-xl ${
-                    isActive ? 'bg-brand-primary text-white' : 'text-text-primary hover:bg-surface-muted'
+                  className={`flex min-h-[64px] items-center justify-between rounded-lg px-7 text-lg font-medium sm:text-xl ${
+                    isActive
+                      ? 'border-b-4 border-b-brand-primary-soft bg-brand-primary text-white'
+                      : 'text-text-primary hover:bg-surface-muted'
                   }`}
                 >
                   {link.label}
-                  <ChevronIcon />
+                  <ChevronIcon open={false} />
                 </a>
               )}
 
               {hasSections && isExpanded && (
-                <div className="border-t-2 border-text-primary bg-surface-muted/40 px-7 py-6">
+                <div className="bg-surface-muted/40 px-7 py-6">
                   {link.sections!.map((section, sectionIndex) => (
                     <div key={sectionIndex} className="mb-6 last:mb-0">
                       {section.title && (
@@ -136,20 +143,6 @@ function SearchIcon() {
   )
 }
 
-function ChevronIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M15 6l-6 6 6 6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 /** Absolute (http/https) links open outside the app, same as the reference design's marked-external items. */
 function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href)
@@ -169,7 +162,8 @@ function ExternalLinkIcon() {
   )
 }
 
-function DropdownChevronIcon({ open }: { open: boolean }) {
+/** A single down-pointing chevron used for every nav row (matches the reference design's uniform treatment), rotating to point up when its row is the currently-open dropdown. */
+function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
       width="18"

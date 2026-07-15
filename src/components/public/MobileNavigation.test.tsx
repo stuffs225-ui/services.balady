@@ -175,3 +175,22 @@ describe('MobileNavigation primary action button', () => {
     )
   })
 })
+
+describe('MobileNavigation "الاستعلامات" solid highlight', () => {
+  const LINKS_WITH_INQUIRIES: NavLinkSetting[] = [
+    { label: 'عن النظام', href: '/about' },
+    NAV_LINKS[1],
+    { label: 'الاستعلامات', href: '/inquiries' },
+    { label: 'تواصل معنا', href: '/contact' },
+  ]
+
+  it('highlights "الاستعلامات" specifically, regardless of its position in the list', () => {
+    render(<MobileNavigation isOpen navLinks={LINKS_WITH_INQUIRIES} />)
+
+    const inquiriesLink = screen.getByRole('link', { name: /الاستعلامات/ })
+    expect(inquiriesLink.className).toContain('bg-brand-primary')
+
+    const aboutLink = screen.getByRole('link', { name: /عن النظام/ })
+    expect(aboutLink.className).not.toContain('bg-brand-primary')
+  })
+})

@@ -33,6 +33,7 @@ function EditEmployeePage() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -41,14 +42,19 @@ function EditEmployeePage() {
     let cancelled = false
 
     async function load() {
-      const data = await getEmployeeById(id!)
-      if (cancelled) return
-      setEmployee(data)
-      if (data?.employee_photo_path) {
-        const url = await getEmployeePhotoUrl(data.employee_photo_path)
-        if (!cancelled) setPhotoUrl(url)
+      try {
+        const data = await getEmployeeById(id!)
+        if (cancelled) return
+        setEmployee(data)
+        if (data?.employee_photo_path) {
+          const url = await getEmployeePhotoUrl(data.employee_photo_path)
+          if (!cancelled) setPhotoUrl(url)
+        }
+      } catch {
+        if (!cancelled) setLoadError('تعذر تحميل بيانات الموظف، يرجى تحديث الصفحة')
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     load()
@@ -78,6 +84,10 @@ function EditEmployeePage() {
 
   if (isLoading) {
     return <p className="text-text-secondary">جارٍ التحميل...</p>
+  }
+
+  if (loadError) {
+    return <p className="text-expired">{loadError}</p>
   }
 
   if (!employee) {

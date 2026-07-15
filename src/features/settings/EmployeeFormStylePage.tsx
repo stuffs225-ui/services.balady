@@ -213,6 +213,7 @@ function EmployeeFormStylePage() {
               submitLabel="حفظ (معاينة فقط)"
               onSubmit={() => {}}
               fieldStylesOverride={fieldStyles}
+              previewMode
             />
           </div>
         </div>

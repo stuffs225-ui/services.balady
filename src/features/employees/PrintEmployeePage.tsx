@@ -19,6 +19,7 @@ const CARD_PAGE_STYLE = `
 function PrintEmployeePage() {
   const { id } = useParams<{ id: string }>()
   const [employee, setEmployee] = useState<Employee | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const { employeeCardTemplateUrl, employeeCardBackTemplateUrl, employeeCardLayout } =
     useSiteSettings()
@@ -28,8 +29,12 @@ function PrintEmployeePage() {
     let cancelled = false
 
     async function load() {
-      const data = await getEmployeeById(id!)
-      if (!cancelled) setEmployee(data)
+      try {
+        const data = await getEmployeeById(id!)
+        if (!cancelled) setEmployee(data)
+      } catch {
+        if (!cancelled) setLoadError('تعذر تحميل بيانات الموظف، يرجى تحديث الصفحة')
+      }
     }
 
     load()
@@ -55,6 +60,7 @@ function PrintEmployeePage() {
     }
   }
 
+  if (loadError) return <p className="p-8 text-expired">{loadError}</p>
   if (!employee) return <p className="p-8 text-text-secondary">جارٍ التحميل...</p>
 
   return (

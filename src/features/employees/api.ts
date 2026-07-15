@@ -138,6 +138,54 @@ export async function deactivateEmployee(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** Fields the admin repeats often across employees, offered as a pick-list of prior values. */
+export const SUGGESTABLE_EMPLOYEE_FIELDS = [
+  'authorityName',
+  'municipalityName',
+  'profession',
+  'programType',
+  'programCompletionDateHijri',
+  'licenseNumber',
+  'establishmentName',
+  'establishmentNumber',
+] as const
+
+export type EmployeeSuggestionField = (typeof SUGGESTABLE_EMPLOYEE_FIELDS)[number]
+
+const SUGGESTION_COLUMN_MAP: Record<EmployeeSuggestionField, string> = {
+  authorityName: 'authority_name',
+  municipalityName: 'municipality_name',
+  profession: 'profession',
+  programType: 'program_type',
+  programCompletionDateHijri: 'program_completion_date_hijri',
+  licenseNumber: 'license_number',
+  establishmentName: 'establishment_name',
+  establishmentNumber: 'establishment_number',
+}
+
+export async function getEmployeeFieldSuggestions(): Promise<
+  Record<EmployeeSuggestionField, string[]>
+> {
+  const columns = Object.values(SUGGESTION_COLUMN_MAP)
+  const { data, error } = await supabase.from('employees').select(columns.join(','))
+  if (error) throw error
+
+  const rows = (data ?? []) as unknown as Array<Record<string, string | null>>
+  const result = {} as Record<EmployeeSuggestionField, string[]>
+
+  for (const field of SUGGESTABLE_EMPLOYEE_FIELDS) {
+    const column = SUGGESTION_COLUMN_MAP[field]
+    const values = new Set<string>()
+    for (const row of rows) {
+      const value = row[column]
+      if (value) values.add(value)
+    }
+    result[field] = Array.from(values).sort((a, b) => a.localeCompare(b, 'ar'))
+  }
+
+  return result
+}
+
 export function isUniqueViolation(error: unknown): boolean {
   return (
     typeof error === 'object' &&

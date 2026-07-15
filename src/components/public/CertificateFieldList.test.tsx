@@ -41,13 +41,13 @@ describe('CertificateFieldList', () => {
     render(<CertificateFieldList certificate={certificate} datePreference="hijri" />)
     const hijriValue = screen.getByText('1448/01/15')
     expect(hijriValue.className).toContain('border-brand-primary')
-    const gregorianValue = screen.getByText('2026-06-30')
+    const gregorianValue = screen.getByText('2026/06/30')
     expect(gregorianValue.className).not.toContain('border-brand-primary')
   })
 
   it('highlights gregorian date fields when that preference is selected', () => {
     render(<CertificateFieldList certificate={certificate} datePreference="gregorian" />)
-    const gregorianValue = screen.getByText('2026-06-30')
+    const gregorianValue = screen.getByText('2026/06/30')
     expect(gregorianValue.className).toContain('border-brand-primary')
   })
 

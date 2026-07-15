@@ -93,6 +93,14 @@ describe('EmployeeForm', () => {
     ).toBe('1448/01/15')
   })
 
+  it('forces native date inputs to dir="ltr" to prevent Safari scrambling the segment order', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const dateInput = screen.getByLabelText('تاريخ إصدار الشهادة الصحية ميلادي')
+    expect(dateInput).toHaveAttribute('dir', 'ltr')
+    expect(dateInput.style.direction).toBe('ltr')
+  })
+
   it('sets the direction/alignment as inline CSS too, not just the dir attribute', () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { CERTIFICATE_VALIDITY_DAYS, addDaysISO, gregorianToHijri, todayISO } from './dates'
+import {
+  CERTIFICATE_VALIDITY_DAYS,
+  addDaysISO,
+  formatGregorianDisplay,
+  gregorianToHijri,
+  todayISO,
+} from './dates'
 
 describe('todayISO', () => {
   it('returns an ISO date string (YYYY-MM-DD)', () => {
@@ -34,5 +40,17 @@ describe('gregorianToHijri', () => {
   it('returns an empty string for invalid input', () => {
     expect(gregorianToHijri('')).toBe('')
     expect(gregorianToHijri('not-a-date')).toBe('')
+  })
+})
+
+describe('formatGregorianDisplay', () => {
+  it('renders a stored ISO date as slash-separated YYYY/MM/DD', () => {
+    expect(formatGregorianDisplay('2026-06-30')).toBe('2026/06/30')
+  })
+
+  it('returns an empty string for missing values', () => {
+    expect(formatGregorianDisplay(null)).toBe('')
+    expect(formatGregorianDisplay(undefined)).toBe('')
+    expect(formatGregorianDisplay('')).toBe('')
   })
 })

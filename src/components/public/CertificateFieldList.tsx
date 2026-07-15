@@ -1,4 +1,5 @@
 import ReadOnlyField from './ReadOnlyField'
+import { formatGregorianDisplay } from '../../lib/dates'
 import type { PublicCertificate } from '../../types/database'
 import type { DatePreference } from '../../config/publicNavigation'
 
@@ -47,7 +48,7 @@ function CertificateFieldList({
       />
       <ReadOnlyField
         label="تاريخ إصدار الشهادة الصحية ميلادي"
-        value={certificate.issue_date_gregorian}
+        value={formatGregorianDisplay(certificate.issue_date_gregorian)}
         dir="ltr"
         highlighted={highlightGregorian}
         largeText={largeText}
@@ -61,7 +62,7 @@ function CertificateFieldList({
       />
       <ReadOnlyField
         label="تاريخ نهاية الشهادة الصحية ميلادي"
-        value={certificate.expiry_date_gregorian}
+        value={formatGregorianDisplay(certificate.expiry_date_gregorian)}
         dir="ltr"
         highlighted={highlightGregorian}
         largeText={largeText}

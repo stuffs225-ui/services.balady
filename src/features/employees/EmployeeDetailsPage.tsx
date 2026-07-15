@@ -5,6 +5,14 @@ import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
 import { computeCertificateStatus, CERTIFICATE_STATUS_LABELS } from '../../lib/certificateStatus'
+import { formatGregorianDisplay } from '../../lib/dates'
+
+const GREGORIAN_DATE_KEYS = new Set<keyof Employee>(['issue_date_gregorian', 'expiry_date_gregorian'])
+
+function detailValue(employee: Employee, key: keyof Employee): string {
+  const raw = employee[key] as string | null
+  return (GREGORIAN_DATE_KEYS.has(key) ? formatGregorianDisplay(raw) : raw) || '—'
+}
 
 const DETAIL_ROWS: Array<{ label: string; key: keyof Employee }> = [
   { label: 'الأمانة', key: 'authority_name' },
@@ -163,7 +171,7 @@ function EmployeeDetailsPage() {
           <div key={row.key}>
             <p className="mb-1 text-sm font-bold text-text-primary">{row.label}</p>
             <p className="rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-secondary">
-              {(employee[row.key] as string | null) || '—'}
+              {detailValue(employee, row.key)}
             </p>
           </div>
         ))}

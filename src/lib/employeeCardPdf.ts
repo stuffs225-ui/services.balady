@@ -13,6 +13,14 @@ import {
 } from '../config/employeeCardLayout'
 import type { Employee, EmployeeCardLayout } from '../types/database'
 
+/**
+ * Both the PDF and the standalone image download rasterize the card from
+ * the same live overlay renderer at this resolution — the PDF is just the
+ * same high-resolution PNGs (front + back) placed on two pages at the
+ * card's physical size, nothing rendered differently between the two.
+ */
+const HIGH_RES_SCALE = 2
+
 type ExportEmployeeCardPdfOptions = {
   templateUrl: string
   backTemplateUrl?: string | null
@@ -40,9 +48,10 @@ function errorMessage(error: unknown): string {
  * Exports the employee card as a PDF at the exact physical card size
  * (CARD_PHYSICAL_WIDTH_MM x CARD_PHYSICAL_HEIGHT_MM), landscape, no margins,
  * background filling the page edge-to-edge — never scaled to A4 or padded.
- * The front face is rasterized from the live overlay renderer at the fixed
- * 1004x638 canvas (~300 DPI at this physical size); the back face (if a
- * static instructions template is configured) is added as-is.
+ * Both pages are literally the same high-resolution PNGs produced by
+ * exportEmployeeCardImage/the back-page renderer below, just placed on a
+ * PDF page at the card's physical size — not a separately rendered, lower
+ * quality path.
  */
 export async function exportEmployeeCardPdf({
   templateUrl,
@@ -59,6 +68,7 @@ export async function exportEmployeeCardPdf({
     publicUrl,
     layout,
     warnings,
+    HIGH_RES_SCALE,
   )
 
   const pdf = new jsPDF({
@@ -70,7 +80,7 @@ export async function exportEmployeeCardPdf({
 
   if (backTemplateUrl) {
     try {
-      const backDataUrl = await imageUrlToCoverCanvasDataUrl(backTemplateUrl)
+      const backDataUrl = await imageUrlToCoverCanvasDataUrl(backTemplateUrl, HIGH_RES_SCALE)
       pdf.addPage([CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM], 'landscape')
       pdf.addImage(backDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
     } catch (error) {
@@ -97,7 +107,14 @@ export async function exportEmployeeCardImage({
   fileName,
 }: Omit<ExportEmployeeCardPdfOptions, 'backTemplateUrl'>): Promise<ExportEmployeeCardImageResult> {
   const warnings: string[] = []
-  const dataUrl = await renderCardFaceToDataUrl(templateUrl, employee, publicUrl, layout, warnings, 2)
+  const dataUrl = await renderCardFaceToDataUrl(
+    templateUrl,
+    employee,
+    publicUrl,
+    layout,
+    warnings,
+    HIGH_RES_SCALE,
+  )
   downloadDataUrl(dataUrl, fileName || `employee-card-${employee.public_token}.png`)
   return { warnings }
 }
@@ -300,18 +317,18 @@ function loadImageElement(url: string): Promise<HTMLImageElement> {
 }
 
 /** Loads a static image URL and draws it edge-to-edge (cover-fit) onto a fixed-size canvas. */
-async function imageUrlToCoverCanvasDataUrl(url: string): Promise<string> {
+async function imageUrlToCoverCanvasDataUrl(url: string, scale = 1): Promise<string> {
   const image = await loadImageElementRobust(url)
 
   const canvas = document.createElement('canvas')
-  canvas.width = TEMPLATE_NATURAL_WIDTH
-  canvas.height = TEMPLATE_NATURAL_HEIGHT
+  canvas.width = TEMPLATE_NATURAL_WIDTH * scale
+  canvas.height = TEMPLATE_NATURAL_HEIGHT * scale
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('تعذر إنشاء لوحة الرسم')
 
-  const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
-  const drawWidth = image.width * scale
-  const drawHeight = image.height * scale
+  const coverScale = Math.max(canvas.width / image.width, canvas.height / image.height)
+  const drawWidth = image.width * coverScale
+  const drawHeight = image.height * coverScale
   const dx = (canvas.width - drawWidth) / 2
   const dy = (canvas.height - drawHeight) / 2
   ctx.drawImage(image, dx, dy, drawWidth, drawHeight)

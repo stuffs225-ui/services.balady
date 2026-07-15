@@ -21,6 +21,7 @@ function PrintEmployeePage() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [exportMessage, setExportMessage] = useState<string | null>(null)
   const { employeeCardTemplateUrl, employeeCardBackTemplateUrl, employeeCardLayout } =
     useSiteSettings()
 
@@ -46,15 +47,21 @@ function PrintEmployeePage() {
   async function handleExportPdf() {
     if (!employee || !employeeCardTemplateUrl) return
     setIsExporting(true)
+    setExportMessage(null)
     try {
       const { exportEmployeeCardPdf } = await import('../../lib/employeeCardPdf')
-      await exportEmployeeCardPdf({
+      const { warnings } = await exportEmployeeCardPdf({
         templateUrl: employeeCardTemplateUrl,
         backTemplateUrl: employeeCardBackTemplateUrl,
         employee,
         publicUrl: getEmployeePublicUrl(employee.public_token),
         layout: employeeCardLayout,
       })
+      if (warnings.length > 0) {
+        setExportMessage(`تم تنزيل الملف، لكن تعذر تضمين — ${warnings.join(' | ')}`)
+      }
+    } catch {
+      setExportMessage('تعذر تصدير الملف، يرجى المحاولة مرة أخرى')
     } finally {
       setIsExporting(false)
     }
@@ -90,6 +97,15 @@ function PrintEmployeePage() {
           {isExporting ? 'جارٍ التصدير...' : 'تنزيل PDF'}
         </button>
       </div>
+
+      {exportMessage && (
+        <p
+          role="alert"
+          className="mx-auto mb-4 max-w-2xl rounded-field bg-red-50 px-4 py-3 text-sm text-expired print:hidden"
+        >
+          {exportMessage}
+        </p>
+      )}
 
       <div className="mx-auto max-w-2xl">
         {employeeCardTemplateUrl ? (

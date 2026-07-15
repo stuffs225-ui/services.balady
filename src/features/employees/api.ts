@@ -2,7 +2,12 @@ import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
 import { generatePublicToken } from '../../lib/token'
 import { normalizeDateOnly } from '../../lib/dates'
 import { normalizePhotoCrop } from '../../lib/photoCrop'
-import type { Employee, EmployeeInsert, EmployeeUpdate } from '../../types/database'
+import type {
+  Employee,
+  EmployeeInsert,
+  EmployeeUpdate,
+  EmployeeCardOverrides,
+} from '../../types/database'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
 
 /**
@@ -86,6 +91,7 @@ function toInsertPayload(values: EmployeeFormValues, token: string): EmployeeIns
     program_completion_date_hijri: values.programCompletionDateHijri || null,
     employee_photo_path: null,
     employee_photo_crop: normalizePhotoCrop(values.employeePhotoCrop),
+    employee_card_overrides: null,
     is_active: true,
   }
 }
@@ -170,6 +176,23 @@ export async function deleteEmployee(id: string, photoPath: string | null): Prom
     // user-visible, so a failure here doesn't need to be surfaced.
     await supabase.storage.from(EMPLOYEE_PHOTOS_BUCKET).remove([photoPath])
   }
+}
+
+/**
+ * Persists per-employee card overrides (font size and/or displayed text
+ * for specific fields), layered on top of the shared global card layout —
+ * used for the rare card that needs to be a special case, without
+ * affecting how every other employee's card renders.
+ */
+export async function updateEmployeeCardOverrides(
+  id: string,
+  overrides: EmployeeCardOverrides | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('employees')
+    .update({ employee_card_overrides: overrides })
+    .eq('id', id)
+  if (error) throw error
 }
 
 /** Fields the admin repeats often across employees, offered as a pick-list of prior values. */

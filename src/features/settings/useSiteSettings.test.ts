@@ -7,6 +7,7 @@ import {
   defaultFooterCopyrightText,
   defaultFooterSupportText,
   siteIdentity,
+  primaryActionLink as defaultPrimaryActionLink,
 } from '../../config/siteLinks'
 
 const mockGetSiteSettings = vi.fn()
@@ -43,6 +44,8 @@ describe('useSiteSettings', () => {
     expect(result.current.accessibilityLinkHref).toBeNull()
     expect(result.current.logoSize).toBe(96)
     expect(result.current.footerBadgeSize).toBe(56)
+    expect(result.current.primaryActionLabel).toBe(defaultPrimaryActionLink.label)
+    expect(result.current.primaryActionHref).toBe(defaultPrimaryActionLink.href)
   })
 
   it('falls back to static defaults when the query fails', async () => {
@@ -68,6 +71,8 @@ describe('useSiteSettings', () => {
       accessibility_link_href: 'https://example.test/accessibility',
       logo_size: 120,
       footer_badge_size: 72,
+      primary_action_label: 'زر مخصص',
+      primary_action_href: '/custom-portal',
       updated_at: '2026-01-01T00:00:00Z',
     })
 
@@ -87,5 +92,7 @@ describe('useSiteSettings', () => {
     expect(result.current.accessibilityLinkHref).toBe('https://example.test/accessibility')
     expect(result.current.logoSize).toBe(120)
     expect(result.current.footerBadgeSize).toBe(72)
+    expect(result.current.primaryActionLabel).toBe('زر مخصص')
+    expect(result.current.primaryActionHref).toBe('/custom-portal')
   })
 })

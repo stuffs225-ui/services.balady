@@ -148,6 +148,8 @@ export type SiteSettings = {
   employee_card_template_path: string | null
   employee_card_back_template_path: string | null
   employee_card_layout: Partial<EmployeeCardLayout> | null
+  primary_action_label: string
+  primary_action_href: string
   updated_at: string
 }
 
@@ -170,6 +172,8 @@ export type SiteSettingsUpdate = Partial<
     | 'employee_card_template_path'
     | 'employee_card_back_template_path'
     | 'employee_card_layout'
+    | 'primary_action_label'
+    | 'primary_action_href'
   >
 >
 

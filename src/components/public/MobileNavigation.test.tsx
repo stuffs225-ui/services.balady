@@ -151,3 +151,27 @@ describe('MobileNavigation dropdown sections', () => {
     expect(internalLink.querySelector('svg')).not.toBeInTheDocument()
   })
 })
+
+describe('MobileNavigation primary action button', () => {
+  it('uses the admin-configured label/href when provided', () => {
+    render(
+      <MobileNavigation
+        isOpen
+        navLinks={NAV_LINKS}
+        primaryActionLabel="الدخول لحسابي"
+        primaryActionHref="https://example.test/account"
+      />,
+    )
+
+    const button = screen.getByRole('link', { name: 'الدخول لحسابي' })
+    expect(button).toHaveAttribute('href', 'https://example.test/account')
+  })
+
+  it('falls back to the static default label/href when none is provided', () => {
+    render(<MobileNavigation isOpen navLinks={NAV_LINKS} />)
+    expect(screen.getByRole('link', { name: 'بوابة الأعمال التجريبية' })).toHaveAttribute(
+      'href',
+      '/business-portal',
+    )
+  })
+})

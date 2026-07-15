@@ -5,9 +5,16 @@ import type { NavLinkSetting } from '../../types/database'
 type MobileNavigationProps = {
   isOpen: boolean
   navLinks?: NavLinkSetting[]
+  primaryActionLabel?: string
+  primaryActionHref?: string
 }
 
-function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigationProps) {
+function MobileNavigation({
+  isOpen,
+  navLinks = defaultNavLinks,
+  primaryActionLabel = primaryActionLink.label,
+  primaryActionHref = primaryActionLink.href,
+}: MobileNavigationProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   // Tracks which isOpen value expandedIndex was last computed for, so
   // closing the whole mobile nav also collapses any open dropdown — done
@@ -93,10 +100,10 @@ function MobileNavigation({ isOpen, navLinks = defaultNavLinks }: MobileNavigati
 
       <div className="px-7 py-[26px]">
         <a
-          href={primaryActionLink.href}
+          href={primaryActionHref}
           className="flex min-h-[60px] items-center justify-center rounded-button bg-brand-primary text-lg font-bold text-white"
         >
-          {primaryActionLink.label}
+          {primaryActionLabel}
         </a>
       </div>
 

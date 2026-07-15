@@ -6,6 +6,7 @@ import {
   defaultFooterCopyrightText,
   defaultFooterSupportText,
   siteIdentity,
+  primaryActionLink as defaultPrimaryActionLink,
 } from '../../config/siteLinks'
 import { mergeEmployeeCardLayout } from '../../config/employeeCardLayout'
 import type { EmployeeCardLayout, NavLinkSetting } from '../../types/database'
@@ -33,6 +34,8 @@ export type ResolvedSiteBranding = {
   employeeCardTemplateUrl: string | null
   employeeCardBackTemplateUrl: string | null
   employeeCardLayout: EmployeeCardLayout
+  primaryActionLabel: string
+  primaryActionHref: string
   isLoading: boolean
 }
 
@@ -59,6 +62,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
     employeeCardTemplateUrl: null,
     employeeCardBackTemplateUrl: null,
     employeeCardLayout: mergeEmployeeCardLayout(null),
+    primaryActionLabel: defaultPrimaryActionLink.label,
+    primaryActionHref: defaultPrimaryActionLink.href,
     isLoading: true,
   })
 
@@ -95,6 +100,8 @@ export function useSiteSettings(): ResolvedSiteBranding {
             settings?.employee_card_back_template_path ?? null,
           ),
           employeeCardLayout: mergeEmployeeCardLayout(settings?.employee_card_layout),
+          primaryActionLabel: settings?.primary_action_label || defaultPrimaryActionLink.label,
+          primaryActionHref: settings?.primary_action_href || defaultPrimaryActionLink.href,
           isLoading: false,
         })
       } catch {

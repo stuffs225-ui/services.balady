@@ -6,6 +6,13 @@ import { createClient } from '@supabase/supabase-js'
 // mishandle.
 export const config = { runtime: 'edge' }
 
+// Vercel's own Edge Function build step type-checks this file with its own
+// tooling, independent of this repo's tsconfig project references — it
+// doesn't pick up @types/node. The Edge Runtime provides a real global
+// process.env at runtime regardless, so this local declaration satisfies
+// the type checker everywhere without depending on @types/node resolution.
+declare const process: { env: Record<string, string | undefined> }
+
 const EMPLOYEE_PHOTOS_BUCKET = 'employee-photos'
 const MIN_TOKEN_LENGTH = 8
 

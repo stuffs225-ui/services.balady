@@ -53,6 +53,14 @@ type EmployeeCardRendererProps = {
   onLayoutChange?: (layout: EmployeeCardLayout) => void
   /** Used for PDF export: forces the exact 1004x638 canvas, background filled edge-to-edge. */
   exportMode?: boolean
+  /**
+   * Pre-resolved photo/QR values, used by the PDF export so the snapshot
+   * never races the internal async fetch below (which only starts after
+   * mount and, if it hasn't resolved yet when the DOM is captured, silently
+   * leaves the photo out of the export).
+   */
+  photoUrlOverride?: string | null
+  qrDataUrlOverride?: string | null
 }
 
 /**
@@ -71,11 +79,13 @@ function EmployeeCardRenderer({
   onSelectField,
   onLayoutChange,
   exportMode = false,
+  photoUrlOverride,
+  qrDataUrlOverride,
 }: EmployeeCardRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [renderedWidth, setRenderedWidth] = useState(TEMPLATE_NATURAL_WIDTH)
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(photoUrlOverride ?? null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(qrDataUrlOverride ?? null)
 
   useEffect(() => {
     const container = containerRef.current
@@ -89,6 +99,7 @@ function EmployeeCardRenderer({
   }, [])
 
   useEffect(() => {
+    if (photoUrlOverride !== undefined) return
     let cancelled = false
     getEmployeePhotoUrl(employee.employee_photo_path).then((url) => {
       if (!cancelled) setPhotoUrl(url)
@@ -96,9 +107,10 @@ function EmployeeCardRenderer({
     return () => {
       cancelled = true
     }
-  }, [employee.employee_photo_path])
+  }, [employee.employee_photo_path, photoUrlOverride])
 
   useEffect(() => {
+    if (qrDataUrlOverride !== undefined) return
     let cancelled = false
     generateQrDataUrl(publicUrl).then((url) => {
       if (!cancelled) setQrDataUrl(url)
@@ -106,7 +118,7 @@ function EmployeeCardRenderer({
     return () => {
       cancelled = true
     }
-  }, [publicUrl])
+  }, [publicUrl, qrDataUrlOverride])
 
   function scaledFontSize(configuredFontSize: number): number {
     return (configuredFontSize * renderedWidth) / TEMPLATE_NATURAL_WIDTH

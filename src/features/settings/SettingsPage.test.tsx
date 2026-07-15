@@ -157,6 +157,27 @@ describe('SettingsPage', () => {
     expect(payload.footer_support_text).toBe('نص دعم مخصص')
   })
 
+  it('seeds the primary action button with the current default label/href', async () => {
+    renderSettingsPage()
+    expect(await screen.findByDisplayValue('بوابة الأعمال التجريبية')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('/business-portal')).toBeInTheDocument()
+  })
+
+  it('lets the admin rename the primary action button and change its destination', async () => {
+    renderSettingsPage()
+    const labelInput = await screen.findByDisplayValue('بوابة الأعمال التجريبية')
+    const hrefInput = screen.getByDisplayValue('/business-portal')
+
+    fireEvent.change(labelInput, { target: { value: 'الدخول لحسابي' } })
+    fireEvent.change(hrefInput, { target: { value: 'https://example.test/account' } })
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.primary_action_label).toBe('الدخول لحسابي')
+    expect(payload.primary_action_href).toBe('https://example.test/account')
+  })
+
   it('loads and saves the logo link URL', async () => {
     mockGetSiteSettings.mockResolvedValue({
       id: '00000000-0000-0000-0000-000000000001',

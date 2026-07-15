@@ -6,7 +6,8 @@ import { useSiteSettings } from '../../features/settings/useSiteSettings'
 
 function PublicHeader() {
   const [isOpen, setIsOpen] = useState(false)
-  const { logoUrl, logoLinkHref, navLinks, logoSize = 96 } = useSiteSettings()
+  const { logoUrl, logoLinkHref, navLinks, logoSize = 96, primaryActionLabel, primaryActionHref } =
+    useSiteSettings()
 
   const logoElement = logoUrl ? (
     <img
@@ -44,7 +45,12 @@ function PublicHeader() {
         {logoLinkHref ? <a href={logoLinkHref}>{logoElement}</a> : logoElement}
       </div>
 
-      <MobileNavigation isOpen={isOpen} navLinks={navLinks} />
+      <MobileNavigation
+        isOpen={isOpen}
+        navLinks={navLinks}
+        primaryActionLabel={primaryActionLabel}
+        primaryActionHref={primaryActionHref}
+      />
 
       <div className="border-t border-divider" />
     </header>

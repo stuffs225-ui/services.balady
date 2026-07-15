@@ -8,6 +8,7 @@ import {
   defaultFooterCopyrightText,
   defaultFooterSupportText,
   siteIdentity,
+  primaryActionLink as defaultPrimaryActionLink,
 } from '../../config/siteLinks'
 import type { NavLinkSetting, NavMenuSection, FooterBadgeSetting } from '../../types/database'
 
@@ -77,6 +78,8 @@ function SettingsPage() {
   const [headerSubtitleText, setHeaderSubtitleText] = useState('')
   const [logoSize, setLogoSize] = useState(96)
   const [footerBadgeSize, setFooterBadgeSize] = useState(56)
+  const [primaryActionLabel, setPrimaryActionLabel] = useState('')
+  const [primaryActionHref, setPrimaryActionHref] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -101,6 +104,8 @@ function SettingsPage() {
         setHeaderSubtitleText(settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`)
         setLogoSize(settings?.logo_size || 96)
         setFooterBadgeSize(settings?.footer_badge_size || 56)
+        setPrimaryActionLabel(settings?.primary_action_label || defaultPrimaryActionLink.label)
+        setPrimaryActionHref(settings?.primary_action_href || defaultPrimaryActionLink.href)
       } catch {
         if (!cancelled) {
           setMessage({ kind: 'error', text: 'تعذر تحميل الإعدادات، يرجى تحديث الصفحة' })
@@ -231,6 +236,8 @@ function SettingsPage() {
         header_subtitle_text: headerSubtitleText,
         logo_size: logoSize,
         footer_badge_size: footerBadgeSize,
+        primary_action_label: primaryActionLabel,
+        primary_action_href: primaryActionHref,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -395,6 +402,27 @@ function SettingsPage() {
           onChange={(event) => setFooterBadgeSize(Number(event.target.value))}
           className="w-full"
         />
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">زر بوابة الأعمال (أسفل قائمة الجوال)</h2>
+        <div className="mb-3">
+          <label className="mb-1 block text-sm font-bold text-text-primary">نص الزر</label>
+          <input
+            value={primaryActionLabel}
+            onChange={(event) => setPrimaryActionLabel(event.target.value)}
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-bold text-text-primary">الرابط الذي يتوجه له الزر</label>
+          <input
+            value={primaryActionHref}
+            onChange={(event) => setPrimaryActionHref(event.target.value)}
+            dir="ltr"
+            className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        </div>
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">

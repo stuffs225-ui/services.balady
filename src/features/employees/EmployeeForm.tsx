@@ -18,6 +18,18 @@ const GREGORIAN_TO_HIJRI: Partial<Record<TextFieldName, TextFieldName>> = {
   expiryDateGregorian: 'expiryDateHijri',
 }
 
+/** Plain Arabic text fields that must type/display right-to-left. */
+const RTL_TEXT_FIELDS = new Set<TextFieldName>([
+  'authorityName',
+  'municipalityName',
+  'employeeName',
+  'gender',
+  'nationality',
+  'profession',
+  'programType',
+  'establishmentName',
+])
+
 const FIELDS: FieldConfig[] = [
   { name: 'authorityName', label: 'الأمانة', type: 'text' },
   { name: 'municipalityName', label: 'البلدية', type: 'text' },
@@ -120,6 +132,7 @@ function EmployeeForm({
           {field.type === 'select' ? (
             <select
               id={field.name}
+              dir={RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : undefined}
               {...register(field.name)}
               className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary"
             >
@@ -134,6 +147,7 @@ function EmployeeForm({
             <input
               id={field.name}
               type={field.type}
+              dir={RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : undefined}
               {...register(
                 field.name,
                 GREGORIAN_TO_HIJRI[field.name]
@@ -147,7 +161,9 @@ function EmployeeForm({
                     }
                   : undefined,
               )}
-              className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary"
+              className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
+                RTL_TEXT_FIELDS.has(field.name) ? 'text-right' : ''
+              }`}
             />
           )}
 

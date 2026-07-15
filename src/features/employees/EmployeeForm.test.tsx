@@ -35,6 +35,17 @@ describe('EmployeeForm', () => {
     expect(hijriInput.value).toBe('1448/01/16')
   })
 
+  it('marks plain Arabic text fields (and the gender select) as dir="rtl"', () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    expect(screen.getByLabelText('الأمانة')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByLabelText('الاسم')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByLabelText('الجنس')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByLabelText('الجنسية')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByLabelText('المهنة')).toHaveAttribute('dir', 'rtl')
+    expect(screen.getByLabelText('اسم المنشأة')).toHaveAttribute('dir', 'rtl')
+  })
+
   it('honors provided defaultValues', () => {
     render(
       <EmployeeForm

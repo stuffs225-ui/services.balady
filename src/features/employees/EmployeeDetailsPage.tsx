@@ -188,6 +188,12 @@ function EmployeeDetailsPage() {
             >
               حذف نهائي
             </button>
+            <span
+              title="عدد مرات فتح الصفحة العامة، عبر مسح رمز QR أو زيارة الرابط مباشرة — مرئي للمشرف فقط"
+              className="rounded-button border border-divider bg-surface-muted px-4 py-2 text-sm font-bold text-text-secondary"
+            >
+              عدد الزيارات: {employee.visit_count}
+            </span>
           </div>
         </div>
       </div>

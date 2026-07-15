@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listEmployees, deactivateEmployee, getEmployeePhotoUrl } from './api'
+import { listEmployees, deactivateEmployee, deleteEmployee, getEmployeePhotoUrl } from './api'
 import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
@@ -66,6 +66,18 @@ function EmployeeListPage() {
     setEmployees((prev) =>
       prev.map((employee) => (employee.id === id ? { ...employee, is_active: false } : employee)),
     )
+  }
+
+  async function handleDelete(employee: Employee) {
+    if (
+      !confirm(
+        `هل أنت متأكد من حذف بيانات "${employee.employee_name}" نهائيًا؟ هذا الإجراء لا يمكن التراجع عنه — ستُحذف كل بياناته وصورته بشكل كامل ونهائي ولن تظهر بالمنصة مرة أخرى.`,
+      )
+    ) {
+      return
+    }
+    await deleteEmployee(employee.id, employee.employee_photo_path)
+    setEmployees((prev) => prev.filter((item) => item.id !== employee.id))
   }
 
   return (
@@ -183,6 +195,13 @@ function EmployeeListPage() {
                       إلغاء التفعيل
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(employee)}
+                    className="rounded-button bg-expired px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+                  >
+                    حذف نهائي
+                  </button>
                 </div>
               </div>
             )

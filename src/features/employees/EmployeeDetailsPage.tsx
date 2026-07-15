@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { getEmployeeById, getEmployeePhotoUrl, deactivateEmployee } from './api'
+import { getEmployeeById, getEmployeePhotoUrl, deactivateEmployee, deleteEmployee } from './api'
 import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
@@ -101,6 +101,19 @@ function EmployeeDetailsPage() {
     navigate('/employees')
   }
 
+  async function handleDelete() {
+    if (!employee) return
+    if (
+      !confirm(
+        `هل أنت متأكد من حذف بيانات "${employee.employee_name}" نهائيًا؟ هذا الإجراء لا يمكن التراجع عنه — ستُحذف كل بياناته وصورته بشكل كامل ونهائي ولن تظهر بالمنصة مرة أخرى.`,
+      )
+    ) {
+      return
+    }
+    await deleteEmployee(employee.id, employee.employee_photo_path)
+    navigate('/employees')
+  }
+
   if (isLoading) return <p className="text-text-secondary">جارٍ التحميل...</p>
   if (loadError) return <p className="text-expired">{loadError}</p>
   if (!employee) return <p className="text-expired">تعذر العثور على الموظف</p>
@@ -161,6 +174,13 @@ function EmployeeDetailsPage() {
               className="rounded-button border border-expired px-4 py-2 text-sm font-bold text-expired hover:bg-red-50"
             >
               إلغاء التفعيل
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="rounded-button bg-expired px-4 py-2 text-sm font-bold text-white hover:opacity-90"
+            >
+              حذف نهائي
             </button>
           </div>
         </div>

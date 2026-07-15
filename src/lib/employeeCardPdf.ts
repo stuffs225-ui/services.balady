@@ -22,6 +22,20 @@ type ExportEmployeeCardPdfOptions = {
   fileName?: string
 }
 
+export type ExportEmployeeCardPdfResult = {
+  /**
+   * Human-readable, specific reasons any image (background, photo, or the
+   * back-page template) couldn't be embedded — the PDF still downloads
+   * with whatever succeeded, but the caller should surface these to the
+   * admin instead of letting a partial export pass as silently correct.
+   */
+  warnings: string[]
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 /**
  * Exports the employee card as a PDF at the exact physical card size
  * (CARD_PHYSICAL_WIDTH_MM x CARD_PHYSICAL_HEIGHT_MM), landscape, no margins,
@@ -37,8 +51,15 @@ export async function exportEmployeeCardPdf({
   publicUrl,
   layout,
   fileName,
-}: ExportEmployeeCardPdfOptions): Promise<void> {
-  const frontDataUrl = await renderCardFaceToDataUrl(templateUrl, employee, publicUrl, layout)
+}: ExportEmployeeCardPdfOptions): Promise<ExportEmployeeCardPdfResult> {
+  const warnings: string[] = []
+  const frontDataUrl = await renderCardFaceToDataUrl(
+    templateUrl,
+    employee,
+    publicUrl,
+    layout,
+    warnings,
+  )
 
   const pdf = new jsPDF({
     orientation: 'landscape',
@@ -48,12 +69,17 @@ export async function exportEmployeeCardPdf({
   pdf.addImage(frontDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
 
   if (backTemplateUrl) {
-    const backDataUrl = await imageUrlToCoverCanvasDataUrl(backTemplateUrl)
-    pdf.addPage([CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM], 'landscape')
-    pdf.addImage(backDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
+    try {
+      const backDataUrl = await imageUrlToCoverCanvasDataUrl(backTemplateUrl)
+      pdf.addPage([CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM], 'landscape')
+      pdf.addImage(backDataUrl, 'PNG', 0, 0, CARD_PHYSICAL_WIDTH_MM, CARD_PHYSICAL_HEIGHT_MM)
+    } catch (error) {
+      warnings.push(`الصفحة الثانية (التعليمات): ${errorMessage(error)}`)
+    }
   }
 
   pdf.save(fileName || `employee-card-${employee.public_token}.pdf`)
+  return { warnings }
 }
 
 async function renderCardFaceToDataUrl(
@@ -61,6 +87,7 @@ async function renderCardFaceToDataUrl(
   employee: Employee,
   publicUrl: string,
   layout: EmployeeCardLayout,
+  warnings: string[],
 ): Promise<string> {
   // Resolve the photo/QR *before* mounting, and pass them in as fixed
   // values. Previously these were fetched by the renderer's own effects
@@ -114,7 +141,7 @@ async function renderCardFaceToDataUrl(
     // employee photo) can silently fail to embed there even though they
     // load fine as normal <img> elements. Sidestep that entirely by
     // replacing every remote image with an inlined data: URI first.
-    await inlineRemoteImages(container)
+    await inlineRemoteImages(container, warnings)
 
     return await toPng(container, {
       width: TEMPLATE_NATURAL_WIDTH,
@@ -174,23 +201,33 @@ function canvasDataUrlFromImageElement(img: HTMLImageElement): string {
  * Supabase Storage URLs have been observed to render fine as an <img> while
  * a fresh fetch() of the exact same URL fails (redirect/CORS quirks a plain
  * image load tolerates but fetch() does not). Falls back to a raw fetch if
- * that canvas readback fails for a genuinely CORS-tainted image.
+ * that canvas readback fails for a genuinely CORS-tainted image. Throws
+ * with both underlying reasons if neither path works, so the caller can
+ * surface a specific diagnosis instead of a silent gap in the export.
  */
 async function toDataUrlRobust(url: string, loadedElement: HTMLImageElement): Promise<string> {
   try {
     return canvasDataUrlFromImageElement(loadedElement)
-  } catch {
-    return await fetchAsDataUrl(url)
+  } catch (canvasError) {
+    try {
+      return await fetchAsDataUrl(url)
+    } catch (fetchError) {
+      throw new Error(
+        `canvas: ${errorMessage(canvasError)} — fetch: ${errorMessage(fetchError)}`,
+        { cause: fetchError },
+      )
+    }
   }
 }
 
 /** Replaces every non-data-URI <img> in the container with an inlined data: URI, in place. */
-async function inlineRemoteImages(container: HTMLElement): Promise<void> {
+async function inlineRemoteImages(container: HTMLElement, warnings: string[]): Promise<void> {
   const imgs = Array.from(container.querySelectorAll('img'))
 
   await Promise.all(
     imgs.map(async (img) => {
       if (img.src.startsWith('data:')) return
+      const label = img.getAttribute('data-card-field') || img.alt || 'صورة'
       try {
         const dataUrl = await toDataUrlRobust(img.src, img)
         await new Promise<void>((resolve) => {
@@ -198,9 +235,11 @@ async function inlineRemoteImages(container: HTMLElement): Promise<void> {
           img.onerror = () => resolve()
           img.src = dataUrl
         })
-      } catch {
-        // Leave the original remote src — the export will still proceed,
-        // just without that one image, rather than failing entirely.
+      } catch (error) {
+        // Leave the original remote src — the export still proceeds, just
+        // without that one image, rather than failing entirely. Report it
+        // instead of swallowing it silently.
+        warnings.push(`${label}: ${errorMessage(error)}`)
       }
     }),
   )

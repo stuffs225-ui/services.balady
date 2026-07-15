@@ -193,6 +193,7 @@ function EmployeeCardRenderer({
         src={templateUrl}
         alt=""
         crossOrigin="anonymous"
+        data-card-field="خلفية البطاقة"
         className={
           exportMode ? 'block h-full w-full object-cover' : 'block h-auto w-full'
         }
@@ -215,6 +216,7 @@ function EmployeeCardRenderer({
                 src={photoUrl}
                 alt={employee.employee_name}
                 crossOrigin="anonymous"
+                data-card-field="صورة الموظف"
                 className="h-full w-full object-cover object-center"
                 draggable={false}
               />

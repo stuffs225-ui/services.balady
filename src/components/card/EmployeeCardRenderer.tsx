@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getEmployeePhotoUrl } from '../../features/employees/api'
 import { generateQrDataUrl } from '../../lib/qrcode'
 import { displayDateOnly } from '../../lib/dates'
+import { computeCoverDrawRect, normalizePhotoCrop } from '../../lib/photoCrop'
 import {
   TEMPLATE_NATURAL_WIDTH,
   TEMPLATE_NATURAL_HEIGHT,
@@ -10,17 +11,19 @@ import {
 } from '../../config/employeeCardLayout'
 import type { Employee, EmployeeCardLayout, EmployeeCardTextBox } from '../../types/database'
 
-type TextFieldKey = Exclude<keyof EmployeeCardLayout, 'photo' | 'qr'>
+export type TextFieldKey = Exclude<keyof EmployeeCardLayout, 'photo' | 'qr'>
 type MediaFieldKey = 'photo' | 'qr'
 type FieldKey = keyof EmployeeCardLayout
 
-const FONT_STACK = 'Arial, Tahoma, sans-serif'
+export const FONT_STACK = 'Arial, Tahoma, sans-serif'
 
 // Single deterministic date formatter — used everywhere the card is
 // rendered or exported (preview, calibration, print, image/PDF export all
 // share this one component), so a date is never independently formatted
-// (or mis-formatted) in more than one place.
-function fieldValue(employee: Employee, field: TextFieldKey): string {
+// (or mis-formatted) in more than one place. Exported so the canvas-based
+// PNG export (employeeCardPdf.ts) reads employee data through the exact
+// same mapping instead of a second, independently-maintained copy.
+export function fieldValue(employee: Employee, field: TextFieldKey): string {
   switch (field) {
     case 'fullName':
       return employee.employee_name
@@ -91,6 +94,9 @@ function EmployeeCardRenderer({
   const [renderedWidth, setRenderedWidth] = useState(TEMPLATE_NATURAL_WIDTH)
   const [photoUrl, setPhotoUrl] = useState<string | null>(photoUrlOverride ?? null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(qrDataUrlOverride ?? null)
+  const [photoNaturalSize, setPhotoNaturalSize] = useState<{ width: number; height: number } | null>(
+    null,
+  )
 
   useEffect(() => {
     const container = containerRef.current
@@ -171,6 +177,21 @@ function EmployeeCardRenderer({
     window.addEventListener('pointerup', handleUp)
   }
 
+  const renderedHeight = (renderedWidth * TEMPLATE_NATURAL_HEIGHT) / TEMPLATE_NATURAL_WIDTH
+  const photoBox = layout.photo
+  const photoBoxPixelWidth = (photoBox.width / 100) * renderedWidth
+  const photoBoxPixelHeight = (photoBox.height / 100) * renderedHeight
+  const photoCrop = normalizePhotoCrop(employee.employee_photo_crop)
+  const photoDrawRect = photoNaturalSize
+    ? computeCoverDrawRect(
+        photoNaturalSize.width,
+        photoNaturalSize.height,
+        photoBoxPixelWidth,
+        photoBoxPixelHeight,
+        photoCrop,
+      )
+    : null
+
   const textFields: TextFieldKey[] = [
     'fullName',
     'identityNumber',
@@ -222,7 +243,21 @@ function EmployeeCardRenderer({
                 alt={employee.employee_name}
                 crossOrigin="anonymous"
                 data-card-field="صورة الموظف"
-                className="h-full w-full object-cover object-center"
+                onLoad={(event) => {
+                  const img = event.currentTarget
+                  setPhotoNaturalSize({ width: img.naturalWidth, height: img.naturalHeight })
+                }}
+                className="absolute select-none"
+                style={
+                  photoDrawRect
+                    ? {
+                        left: photoDrawRect.x,
+                        top: photoDrawRect.y,
+                        width: photoDrawRect.width,
+                        height: photoDrawRect.height,
+                      }
+                    : { opacity: 0 }
+                }
                 draggable={false}
               />
             ) : null
@@ -283,7 +318,7 @@ function MediaOverlayBox({
 }: MediaOverlayBoxProps) {
   return (
     <div
-      className={calibrationMode ? `absolute cursor-move ${selected ? 'outline outline-2 outline-brand-primary' : 'outline outline-1 outline-dashed outline-white/70'}` : 'absolute'}
+      className={calibrationMode ? `absolute overflow-hidden cursor-move ${selected ? 'outline outline-2 outline-brand-primary' : 'outline outline-1 outline-dashed outline-white/70'}` : 'absolute overflow-hidden'}
       style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.width}%`, height: `${box.height}%` }}
       onPointerDown={calibrationMode ? onPointerDownMove : undefined}
     >

@@ -1,12 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
 import { displayDateOnly, gregorianToHijri, normalizeDateOnly } from '../../lib/dates'
+import {
+  DEFAULT_PHOTO_CROP,
+  computeCoverDrawRect,
+  type EmployeePhotoCrop,
+} from '../../lib/photoCrop'
 import { getEmployeeFieldSuggestions, type EmployeeSuggestionField } from './api'
 import { extractIdCardFields } from '../../lib/idCardOcr'
+import PhotoCropModal from './PhotoCropModal'
 
-type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto'>
+type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto' | 'employeePhotoCrop'>
 
 const SUGGESTABLE_FIELDS = new Set<TextFieldName>([
   'authorityName',
@@ -142,6 +148,31 @@ function DateOnlyInput({
   )
 }
 
+/** The 96x96 admin-form thumbnail, cropped the same way as every other surface. */
+function CroppedPhotoPreview({ src, crop }: { src: string; crop: EmployeePhotoCrop }) {
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null)
+  const size = 96
+  const rect = naturalSize
+    ? computeCoverDrawRect(naturalSize.width, naturalSize.height, size, size, crop)
+    : null
+
+  return (
+    <div className="relative h-24 w-24 overflow-hidden rounded-field bg-surface-muted">
+      <img
+        src={src}
+        alt="معاينة الصورة الشخصية"
+        onLoad={(event) => {
+          const img = event.currentTarget
+          setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight })
+        }}
+        draggable={false}
+        className="absolute select-none"
+        style={rect ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height } : { opacity: 0 }}
+      />
+    </div>
+  )
+}
+
 type EmployeeFormProps = {
   defaultValues?: Partial<EmployeeFormValues>
   existingPhotoUrl?: string | null
@@ -165,6 +196,8 @@ function EmployeeForm({
   >({})
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractMessage, setExtractMessage] = useState<string | null>(null)
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -176,6 +209,8 @@ function EmployeeForm({
     resolver: zodResolver(employeeFormSchema),
     defaultValues,
   })
+
+  const photoCrop = (watch('employeePhotoCrop') as EmployeePhotoCrop | null | undefined) ?? DEFAULT_PHOTO_CROP
 
   useEffect(() => {
     let cancelled = false
@@ -220,15 +255,28 @@ function EmployeeForm({
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    setValue('employeePhoto', file, { shouldValidate: true })
+    if (!file) return
+    // Hold the file until the admin confirms a crop in the calibration
+    // modal — the form's employeePhoto value isn't set (and nothing is
+    // saved) until then.
+    setPendingPhotoFile(file)
+  }
 
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => setPhotoPreview(reader.result as string)
-      reader.readAsDataURL(file)
-    } else {
-      setPhotoPreview(existingPhotoUrl ?? null)
-    }
+  function handleCropConfirm(crop: EmployeePhotoCrop) {
+    if (!pendingPhotoFile) return
+    setValue('employeePhoto', pendingPhotoFile, { shouldValidate: true })
+    setValue('employeePhotoCrop', crop, { shouldValidate: true })
+
+    const reader = new FileReader()
+    reader.onload = () => setPhotoPreview(reader.result as string)
+    reader.readAsDataURL(pendingPhotoFile)
+
+    setPendingPhotoFile(null)
+  }
+
+  function handleCropCancel() {
+    setPendingPhotoFile(null)
+    if (photoInputRef.current) photoInputRef.current.value = ''
   }
 
   function handleGregorianDateChange(field: TextFieldName, isoValue: string) {
@@ -272,11 +320,7 @@ function EmployeeForm({
         </label>
         <div className="flex items-center gap-4">
           {photoPreview ? (
-            <img
-              src={photoPreview}
-              alt="معاينة الصورة الشخصية"
-              className="h-24 w-24 rounded-field object-cover"
-            />
+            <CroppedPhotoPreview src={photoPreview} crop={photoCrop} />
           ) : (
             <div className="flex h-24 w-24 items-center justify-center rounded-field bg-surface-muted text-xs text-text-secondary">
               لا توجد صورة
@@ -284,6 +328,7 @@ function EmployeeForm({
           )}
           <input
             id="employeePhoto"
+            ref={photoInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handlePhotoChange}
@@ -294,6 +339,15 @@ function EmployeeForm({
           <p className="mt-2 text-sm text-expired">{errors.employeePhoto.message}</p>
         )}
       </div>
+
+      {pendingPhotoFile && (
+        <PhotoCropModal
+          file={pendingPhotoFile}
+          initialCrop={photoCrop}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
 
       {FIELDS.map((field) => {
         const dir = directionFor(field)

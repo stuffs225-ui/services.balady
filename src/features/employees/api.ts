@@ -1,6 +1,7 @@
 import { supabase, EMPLOYEE_PHOTOS_BUCKET } from '../../lib/supabase'
 import { generatePublicToken } from '../../lib/token'
 import { normalizeDateOnly } from '../../lib/dates'
+import { normalizePhotoCrop } from '../../lib/photoCrop'
 import type { Employee, EmployeeInsert, EmployeeUpdate } from '../../types/database'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
 
@@ -84,6 +85,7 @@ function toInsertPayload(values: EmployeeFormValues, token: string): EmployeeIns
     expiry_date_gregorian: requireDateOnly(values.expiryDateGregorian, 'تاريخ نهاية الشهادة الصحية ميلادي'),
     program_completion_date_hijri: values.programCompletionDateHijri || null,
     employee_photo_path: null,
+    employee_photo_crop: normalizePhotoCrop(values.employeePhotoCrop),
     is_active: true,
   }
 }
@@ -134,6 +136,7 @@ export async function updateEmployee(
     expiry_date_gregorian: requireDateOnly(values.expiryDateGregorian, 'تاريخ نهاية الشهادة الصحية ميلادي'),
     program_completion_date_hijri: values.programCompletionDateHijri || null,
     employee_photo_path: photoPath,
+    employee_photo_crop: normalizePhotoCrop(values.employeePhotoCrop),
   }
 
   const { data, error } = await supabase

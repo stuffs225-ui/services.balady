@@ -8,8 +8,7 @@ import {
   siteIdentity,
 } from '../../config/siteLinks'
 import { mergeEmployeeCardLayout } from '../../config/employeeCardLayout'
-import { mergeEmployeeFormFieldStyles } from '../../config/employeeFormFields'
-import type { EmployeeCardLayout, EmployeeFormFieldStyles, NavLinkSetting } from '../../types/database'
+import type { EmployeeCardLayout, NavLinkSetting } from '../../types/database'
 
 export type ResolvedFooterBadge = {
   imageUrl: string | null
@@ -33,7 +32,6 @@ export type ResolvedSiteBranding = {
   employeeCardTemplateUrl: string | null
   employeeCardBackTemplateUrl: string | null
   employeeCardLayout: EmployeeCardLayout
-  employeeFormFieldStyles: EmployeeFormFieldStyles
   isLoading: boolean
 }
 
@@ -59,7 +57,6 @@ export function useSiteSettings(): ResolvedSiteBranding {
     employeeCardTemplateUrl: null,
     employeeCardBackTemplateUrl: null,
     employeeCardLayout: mergeEmployeeCardLayout(null),
-    employeeFormFieldStyles: mergeEmployeeFormFieldStyles(null),
     isLoading: true,
   })
 
@@ -95,9 +92,6 @@ export function useSiteSettings(): ResolvedSiteBranding {
             settings?.employee_card_back_template_path ?? null,
           ),
           employeeCardLayout: mergeEmployeeCardLayout(settings?.employee_card_layout),
-          employeeFormFieldStyles: mergeEmployeeFormFieldStyles(
-            settings?.employee_form_field_styles,
-          ),
           isLoading: false,
         })
       } catch {

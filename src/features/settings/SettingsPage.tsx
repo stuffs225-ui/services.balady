@@ -188,20 +188,6 @@ function SettingsPage() {
       </section>
 
       <section className="mb-8 border-b border-divider pb-8">
-        <h2 className="mb-4 font-bold text-heading">تنسيق نموذج تسجيل الموظف</h2>
-        <p className="mb-4 text-sm text-text-secondary">
-          حدد اتجاه الكتابة ومحاذاة كل حقل في نموذج إضافة/تعديل الموظف (يمين/يسار/وسط)، مع معاينة
-          مباشرة قبل الحفظ.
-        </p>
-        <Link
-          to="/settings/employee-form-style"
-          className="inline-block rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
-        >
-          فتح إعدادات تنسيق الفورم
-        </Link>
-      </section>
-
-      <section className="mb-8 border-b border-divider pb-8">
         <h2 className="mb-4 font-bold text-heading">الشريط العلوي وأدوات الوصول</h2>
         <div className="mb-3">
           <label className="mb-1 block text-sm font-bold text-text-primary">

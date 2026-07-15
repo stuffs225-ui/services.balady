@@ -60,8 +60,11 @@ function PrintEmployeePage() {
       if (warnings.length > 0) {
         setExportMessage(`تم تنزيل الملف، لكن تعذر تضمين — ${warnings.join(' | ')}`)
       }
-    } catch {
-      setExportMessage('تعذر تصدير الملف، يرجى المحاولة مرة أخرى')
+    } catch (error) {
+      // Surfacing the real reason in the UI itself — not just the console —
+      // matters here since non-technical admins can't easily open dev tools.
+      const { errorMessage } = await import('../../lib/employeeCardPdf')
+      setExportMessage(`تعذر تصدير الملف، يرجى المحاولة مرة أخرى (السبب: ${errorMessage(error)})`)
     } finally {
       setIsExporting(false)
     }
@@ -82,8 +85,9 @@ function PrintEmployeePage() {
       if (warnings.length > 0) {
         setExportMessage(`تم تنزيل الصورة، لكن تعذر تضمين — ${warnings.join(' | ')}`)
       }
-    } catch {
-      setExportMessage('تعذر تصدير الصورة، يرجى المحاولة مرة أخرى')
+    } catch (error) {
+      const { errorMessage } = await import('../../lib/employeeCardPdf')
+      setExportMessage(`تعذر تصدير الصورة، يرجى المحاولة مرة أخرى (السبب: ${errorMessage(error)})`)
     } finally {
       setIsExporting(false)
     }

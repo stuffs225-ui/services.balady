@@ -44,6 +44,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+/** "Health certificate - <certificate number>.<ext>", stripped of characters illegal in filenames. */
+function cardFileName(employee: Employee, extension: 'pdf' | 'png'): string {
+  const safeCertificateNumber = employee.certificate_number.replace(/[\\/:*?"<>|]/g, '').trim()
+  return `Health certificate - ${safeCertificateNumber}.${extension}`
+}
+
 /**
  * Exports the employee card as a PDF at the exact physical card size
  * (CARD_PHYSICAL_WIDTH_MM x CARD_PHYSICAL_HEIGHT_MM), landscape, no margins,
@@ -88,7 +94,7 @@ export async function exportEmployeeCardPdf({
     }
   }
 
-  pdf.save(fileName || `employee-card-${employee.public_token}.pdf`)
+  pdf.save(fileName || cardFileName(employee, 'pdf'))
   return { warnings }
 }
 
@@ -115,7 +121,7 @@ export async function exportEmployeeCardImage({
     warnings,
     HIGH_RES_SCALE,
   )
-  downloadDataUrl(dataUrl, fileName || `employee-card-${employee.public_token}.png`)
+  downloadDataUrl(dataUrl, fileName || cardFileName(employee, 'png'))
   return { warnings }
 }
 

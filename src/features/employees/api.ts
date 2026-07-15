@@ -154,6 +154,24 @@ export async function deactivateEmployee(id: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Permanently erases the employee's record — unlike deactivateEmployee,
+ * this cannot be undone: the row is gone, and it never appears in the
+ * platform or via the public verify_certificate() RPC again.
+ */
+export async function deleteEmployee(id: string, photoPath: string | null): Promise<void> {
+  const { error } = await supabase.from('employees').delete().eq('id', id)
+  if (error) throw error
+
+  if (photoPath) {
+    // Best-effort cleanup — the row is already gone, which is what makes
+    // the employee disappear from the platform; a leftover object in a
+    // private bucket with no row pointing to it is not reachable or
+    // user-visible, so a failure here doesn't need to be surfaced.
+    await supabase.storage.from(EMPLOYEE_PHOTOS_BUCKET).remove([photoPath])
+  }
+}
+
 /** Fields the admin repeats often across employees, offered as a pick-list of prior values. */
 export const SUGGESTABLE_EMPLOYEE_FIELDS = [
   'authorityName',

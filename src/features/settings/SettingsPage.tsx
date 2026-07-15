@@ -52,24 +52,31 @@ function SettingsPage() {
     let cancelled = false
 
     async function load() {
-      const settings = await getSiteSettings()
-      if (cancelled) return
-      setLogoPreview(getBrandingAssetUrl(settings?.logo_path ?? null))
-      // Seed the editor with what visitors currently see (the static
-      // defaults) when no admin-configured links have been saved yet, so
-      // there's always something to edit rather than a blank list.
-      setNavLinks(settings?.nav_links?.length ? settings.nav_links : defaultNavLinks)
-      setFooterLinks(settings?.footer_links?.length ? settings.footer_links : defaultFooterLinks)
-      setBadges(toBadgeDrafts(settings?.footer_badges ?? []))
-      setFooterCopyrightText(settings?.footer_copyright_text || defaultFooterCopyrightText)
-      setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
-      setTrustBannerText(settings?.trust_banner_text || siteIdentity.demoDisclaimer)
-      setAccessibilityLinkHref(settings?.accessibility_link_href ?? '')
-      setHeaderTitleText(settings?.header_title_text || siteIdentity.nameAr)
-      setHeaderSubtitleText(settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`)
-      setLogoSize(settings?.logo_size || 96)
-      setFooterBadgeSize(settings?.footer_badge_size || 56)
-      setIsLoading(false)
+      try {
+        const settings = await getSiteSettings()
+        if (cancelled) return
+        setLogoPreview(getBrandingAssetUrl(settings?.logo_path ?? null))
+        // Seed the editor with what visitors currently see (the static
+        // defaults) when no admin-configured links have been saved yet, so
+        // there's always something to edit rather than a blank list.
+        setNavLinks(settings?.nav_links?.length ? settings.nav_links : defaultNavLinks)
+        setFooterLinks(settings?.footer_links?.length ? settings.footer_links : defaultFooterLinks)
+        setBadges(toBadgeDrafts(settings?.footer_badges ?? []))
+        setFooterCopyrightText(settings?.footer_copyright_text || defaultFooterCopyrightText)
+        setFooterSupportText(settings?.footer_support_text || defaultFooterSupportText)
+        setTrustBannerText(settings?.trust_banner_text || siteIdentity.demoDisclaimer)
+        setAccessibilityLinkHref(settings?.accessibility_link_href ?? '')
+        setHeaderTitleText(settings?.header_title_text || siteIdentity.nameAr)
+        setHeaderSubtitleText(settings?.header_subtitle_text || `(${siteIdentity.demoLabel})`)
+        setLogoSize(settings?.logo_size || 96)
+        setFooterBadgeSize(settings?.footer_badge_size || 56)
+      } catch {
+        if (!cancelled) {
+          setMessage({ kind: 'error', text: 'تعذر تحميل الإعدادات، يرجى تحديث الصفحة' })
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
 
     load()
@@ -177,6 +184,20 @@ function SettingsPage() {
           className="inline-block rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
         >
           فتح إعدادات قالب البطاقة
+        </Link>
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">تنسيق نموذج تسجيل الموظف</h2>
+        <p className="mb-4 text-sm text-text-secondary">
+          حدد اتجاه الكتابة ومحاذاة كل حقل في نموذج إضافة/تعديل الموظف (يمين/يسار/وسط)، مع معاينة
+          مباشرة قبل الحفظ.
+        </p>
+        <Link
+          to="/settings/employee-form-style"
+          className="inline-block rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+        >
+          فتح إعدادات تنسيق الفورم
         </Link>
       </section>
 

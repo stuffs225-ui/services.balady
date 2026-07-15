@@ -62,16 +62,23 @@ function EmployeeCardTemplatePage() {
     let cancelled = false
 
     async function load() {
-      const settings = await getSiteSettings()
-      if (cancelled) return
-      setTemplatePath(settings?.employee_card_template_path ?? null)
-      setTemplateUrl(getEmployeeCardTemplateUrl(settings?.employee_card_template_path ?? null))
-      setLayout(mergeEmployeeCardLayout(settings?.employee_card_layout))
-      setBackTemplatePath(settings?.employee_card_back_template_path ?? null)
-      setBackTemplateUrl(
-        getEmployeeCardTemplateUrl(settings?.employee_card_back_template_path ?? null),
-      )
-      setIsLoading(false)
+      try {
+        const settings = await getSiteSettings()
+        if (cancelled) return
+        setTemplatePath(settings?.employee_card_template_path ?? null)
+        setTemplateUrl(getEmployeeCardTemplateUrl(settings?.employee_card_template_path ?? null))
+        setLayout(mergeEmployeeCardLayout(settings?.employee_card_layout))
+        setBackTemplatePath(settings?.employee_card_back_template_path ?? null)
+        setBackTemplateUrl(
+          getEmployeeCardTemplateUrl(settings?.employee_card_back_template_path ?? null),
+        )
+      } catch {
+        if (!cancelled) {
+          setMessage({ kind: 'error', text: 'تعذر تحميل الإعدادات، يرجى تحديث الصفحة' })
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
 
     load()

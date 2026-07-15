@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
 import { gregorianToHijri } from '../../lib/dates'
+import { useSiteSettings } from '../settings/useSiteSettings'
+import type { EmployeeFormFieldStyles, EmployeeFormStylableField } from '../../types/database'
 
 type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto'>
 
@@ -17,18 +19,6 @@ const GREGORIAN_TO_HIJRI: Partial<Record<TextFieldName, TextFieldName>> = {
   issueDateGregorian: 'issueDateHijri',
   expiryDateGregorian: 'expiryDateHijri',
 }
-
-/** Plain Arabic text fields that must type/display right-to-left. */
-const RTL_TEXT_FIELDS = new Set<TextFieldName>([
-  'authorityName',
-  'municipalityName',
-  'employeeName',
-  'gender',
-  'nationality',
-  'profession',
-  'programType',
-  'establishmentName',
-])
 
 const FIELDS: FieldConfig[] = [
   { name: 'authorityName', label: 'الأمانة', type: 'text' },
@@ -50,6 +40,12 @@ const FIELDS: FieldConfig[] = [
   { name: 'establishmentNumber', label: 'رقم المنشأة', type: 'text' },
 ]
 
+const ALIGN_CLASS: Record<'right' | 'left' | 'center', string> = {
+  right: 'text-right',
+  left: 'text-left',
+  center: 'text-center',
+}
+
 type EmployeeFormProps = {
   defaultValues?: Partial<EmployeeFormValues>
   existingPhotoUrl?: string | null
@@ -57,6 +53,8 @@ type EmployeeFormProps = {
   submitLabel: string
   onSubmit: (values: EmployeeFormValues) => void | Promise<void>
   formError?: string | null
+  /** Overrides the saved field styles — used for the live preview in Settings. */
+  fieldStylesOverride?: EmployeeFormFieldStyles
 }
 
 function EmployeeForm({
@@ -66,8 +64,11 @@ function EmployeeForm({
   submitLabel,
   onSubmit,
   formError,
+  fieldStylesOverride,
 }: EmployeeFormProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(existingPhotoUrl ?? null)
+  const { employeeFormFieldStyles } = useSiteSettings()
+  const fieldStyles = fieldStylesOverride ?? employeeFormFieldStyles
 
   const {
     register,
@@ -90,6 +91,10 @@ function EmployeeForm({
     } else {
       setPhotoPreview(existingPhotoUrl ?? null)
     }
+  }
+
+  function styleFor(name: TextFieldName) {
+    return fieldStyles[name as EmployeeFormStylableField]
   }
 
   return (
@@ -123,55 +128,61 @@ function EmployeeForm({
         )}
       </div>
 
-      {FIELDS.map((field) => (
-        <div key={field.name}>
-          <label htmlFor={field.name} className="mb-2 block text-sm font-bold text-text-primary">
-            {field.label}
-          </label>
+      {FIELDS.map((field) => {
+        const style = styleFor(field.name)
 
-          {field.type === 'select' ? (
-            <select
-              id={field.name}
-              dir={RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : undefined}
-              {...register(field.name)}
-              className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary"
-            >
-              <option value="">اختر</option>
-              {field.options?.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              id={field.name}
-              type={field.type}
-              dir={RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : undefined}
-              {...register(
-                field.name,
-                GREGORIAN_TO_HIJRI[field.name]
-                  ? {
-                      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                        const hijriField = GREGORIAN_TO_HIJRI[field.name]!
-                        setValue(hijriField, gregorianToHijri(event.target.value), {
-                          shouldValidate: true,
-                        })
-                      },
-                    }
-                  : undefined,
-              )}
-              className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
-                RTL_TEXT_FIELDS.has(field.name) ? 'text-right' : ''
-              }`}
-            />
-          )}
+        return (
+          <div key={field.name}>
+            <label htmlFor={field.name} className="mb-2 block text-sm font-bold text-text-primary">
+              {field.label}
+            </label>
 
-          {errors[field.name] && (
-            <p className="mt-2 text-sm text-expired">{errors[field.name]?.message}</p>
-          )}
-        </div>
-      ))}
+            {field.type === 'select' ? (
+              <select
+                id={field.name}
+                dir={style?.dir}
+                {...register(field.name)}
+                className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
+                  style ? ALIGN_CLASS[style.align] : ''
+                }`}
+              >
+                <option value="">اختر</option>
+                {field.options?.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={field.name}
+                type={field.type}
+                dir={field.type === 'date' ? undefined : style?.dir}
+                {...register(
+                  field.name,
+                  GREGORIAN_TO_HIJRI[field.name]
+                    ? {
+                        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                          const hijriField = GREGORIAN_TO_HIJRI[field.name]!
+                          setValue(hijriField, gregorianToHijri(event.target.value), {
+                            shouldValidate: true,
+                          })
+                        },
+                      }
+                    : undefined,
+                )}
+                className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
+                  field.type !== 'date' && style ? ALIGN_CLASS[style.align] : ''
+                }`}
+              />
+            )}
+
+            {errors[field.name] && (
+              <p className="mt-2 text-sm text-expired">{errors[field.name]?.message}</p>
+            )}
+          </div>
+        )
+      })}
 
       {formError && (
         <p role="alert" className="rounded-field bg-red-50 px-4 py-3 text-sm text-expired">

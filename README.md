@@ -35,16 +35,12 @@ npm run dev
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Your Supabase publishable (anon) key |
 | `VITE_APP_PUBLIC_URL` | The public base URL of this deployment, used to build `/e/:token` links and QR codes (e.g. `https://your-demo.vercel.app`, or `http://localhost:5173` locally) |
-| `SUPABASE_URL` | Same Supabase project URL, read **server-side only** by `api/public-employee-photo/[token].ts` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase **service role** key, read **server-side only** by the same function — required for it to read the private photo bucket |
 
 `.env` and all other local env files are git-ignored. **Never** commit real
-values. The Supabase **service role** key must never be prefixed with
-`VITE_` or referenced anywhere under `src/` — it belongs only in the
-server-only `api/` Edge Function, which is the one legitimate place in this
-project that needs privileged Supabase access. The app validates the
-`VITE_*` variables at startup (`src/lib/supabase.ts`) and throws a clear
-error if any are missing.
+values, and **never** put the Supabase **service role** key anywhere in
+this project — only the publishable/anon key belongs in frontend code. The
+app validates these variables at startup (`src/lib/supabase.ts`) and throws
+a clear error if any are missing.
 
 ## Supabase setup
 
@@ -65,19 +61,20 @@ error if any are missing.
    - the `public.verify_certificate(p_token)` RPC — the **only** way
      anonymous visitors can read certificate data, and it returns exclusively
      public-safe, masked fields
-   - the private `employee-photos` storage bucket and its access policies
+   - the `employee-photos` storage bucket (made public by a later
+     migration) and its access policies
 
 ### Storage
 
-The `employee-photos` bucket is created as **private** by the migration
+The `employee-photos` bucket is **public**, the same as `branding-assets`
 (5 MB limit, JPG/PNG/WebP only). Photos are stored at the path
-`<public_token>/photo`. The public `/e/:token` page never talks to Supabase
-Storage directly — it requests `/api/public-employee-photo/:token`, a
-same-origin Vercel Edge Function (`api/public-employee-photo/[token].ts`)
-that validates the token, confirms the employee is active, downloads the
-photo server-side with the service role key, and streams the bytes back
-with its real content type. No signed URL, storage path, or employee ID is
-ever exposed to the browser.
+`<public_token>/photo` and served via a plain, permanent public Storage
+URL — the exact same mechanism already used for the header logo, with no
+signing, no expiry, and no server-side proxy. The object path is only
+reachable if you already know the employee's `public_token` (128 bits of
+entropy), which is the same token already required to view the rest of
+the certificate at `/e/:token` — so this doesn't expose anything beyond
+what that link already exposes.
 
 ### First admin user
 
@@ -166,15 +163,9 @@ SCREENSHOT_BASE_URL=http://localhost:4173 npm run screenshots
 
 - **Build command**: `npm run build`
 - **Output directory**: `dist`
-- Set **all five** environment variables above in the Vercel project
-  settings — including `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
-  (server-only, no `VITE_` prefix). Without these two, every request to
-  `/api/public-employee-photo/:token` returns `500` and no employee photo
-  will load on the public page.
+- Set the three environment variables above in the Vercel project settings.
 - `vercel.json` rewrites every path to `index.html` so direct navigation to
   `/e/:token`, `/employees`, etc. works correctly on a fresh page load.
-  Vercel serves files under `api/` (like the photo endpoint) before this
-  rewrite applies, so no extra routing config is needed for it.
 
 ## Troubleshooting
 
@@ -182,7 +173,7 @@ SCREENSHOT_BASE_URL=http://localhost:4173 npm run screenshots
 | --- | --- |
 | App throws "Missing Supabase environment variables" | Ensure `.env` (local) or the Vercel project settings (deployed) define all three `VITE_*` variables. |
 | Public page shows "تعذر التحقق من الشهادة" for a real token | Confirm migrations ran successfully and the employee's `is_active` is not relied upon — invalid/unknown tokens always show this generic message by design. |
-| Employee photo doesn't load on the public page | Confirm `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in Vercel (server-only, no `VITE_` prefix), the employee is `is_active = true`, and the storage policies from `20260714173924_storage_employee_photos.sql` were applied. |
+| Employee photo doesn't load on the public page | Confirm migration `20260715100000_employee_photos_bucket_public.sql` ran (the `employee-photos` bucket must be `public = true`) and the employee actually has a photo uploaded. |
 | 404 on direct navigation to `/e/:token` after deploying | Confirm `vercel.json` is present and deployed; it's required for SPA client-side routing. |
 | Login fails with a generic error | Confirm the user exists in Supabase Auth and the email is confirmed. |
 

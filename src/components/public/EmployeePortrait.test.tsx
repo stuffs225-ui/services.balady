@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import EmployeePortrait from './EmployeePortrait'
 
 describe('EmployeePortrait', () => {
@@ -21,20 +21,26 @@ describe('EmployeePortrait', () => {
     expect(placeholder.className).toContain('w-[184px]')
   })
 
-  it('shows a distinct error message when the photo failed to load, not the "no photo" placeholder', () => {
-    render(<EmployeePortrait photoUrl={null} employeeName="موظف تجريبي" photoLoadFailed />)
-    expect(screen.getByText('تعذر تحميل الصورة')).toBeInTheDocument()
-    expect(screen.queryByText('لا توجد صورة')).toBeNull()
-  })
-
-  it('renders the same-origin proxy endpoint with the required loading attributes, not a remote/signed URL', () => {
+  it('falls back to the placeholder if the photo fails to load', () => {
     const { container } = render(
-      <EmployeePortrait photoUrl="/api/public-employee-photo/some-token" employeeName="موظف تجريبي" />,
+      <EmployeePortrait photoUrl="https://cdn.test/broken.jpg" employeeName="موظف تجريبي" />,
     )
     const img = container.querySelector('img')!
-    expect(img).toHaveAttribute('src', '/api/public-employee-photo/some-token')
-    expect(img).toHaveAttribute('loading', 'eager')
-    expect(img).toHaveAttribute('decoding', 'sync')
-    expect(img).toHaveAttribute('fetchpriority', 'high')
+    fireEvent.error(img)
+    expect(screen.getByText('لا توجد صورة')).toBeInTheDocument()
+  })
+
+  it('renders a plain, permanent public Storage URL — the same mechanism as the header logo, no signing/proxy', () => {
+    const { container } = render(
+      <EmployeePortrait
+        photoUrl="https://project.supabase.co/storage/v1/object/public/employee-photos/some-token/photo"
+        employeeName="موظف تجريبي"
+      />,
+    )
+    const img = container.querySelector('img')!
+    expect(img).toHaveAttribute(
+      'src',
+      'https://project.supabase.co/storage/v1/object/public/employee-photos/some-token/photo',
+    )
   })
 })

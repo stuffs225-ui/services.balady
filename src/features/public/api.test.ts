@@ -1,11 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 const rpc = vi.fn()
+const getPublicUrl = vi.fn()
+const from = vi.fn((bucket: string) => {
+  void bucket
+  return { getPublicUrl }
+})
 vi.mock('../../lib/supabase', () => ({
   EMPLOYEE_PHOTOS_BUCKET: 'employee-photos',
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
-    storage: { from: () => ({ createSignedUrl: () => ({ data: null }) }) },
+    storage: { from: (bucket: string) => from(bucket) },
   },
 }))
 
@@ -33,7 +38,14 @@ const baseCertificate = {
 }
 
 describe('fetchPublicCertificate', () => {
-  beforeEach(() => rpc.mockReset())
+  beforeEach(() => {
+    rpc.mockReset()
+    getPublicUrl.mockReset()
+    from.mockClear()
+    getPublicUrl.mockReturnValue({
+      data: { publicUrl: 'https://project.supabase.co/storage/v1/object/public/employee-photos/some-token/photo' },
+    })
+  })
 
   it('collapses a legacy "expiring" status from the RPC to "active"', async () => {
     rpc.mockResolvedValue({ data: [{ ...baseCertificate, status: 'expiring' }], error: null })
@@ -63,5 +75,34 @@ describe('fetchPublicCertificate', () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
     const result = await fetchPublicCertificate('x')
     expect(result.kind).toBe('network-error')
+  })
+
+  it('returns a plain public Storage URL (no signing) when the employee has a photo', async () => {
+    rpc.mockResolvedValue({
+      data: [{ ...baseCertificate, has_photo: true, status: 'active' }],
+      error: null,
+    })
+    const result = await fetchPublicCertificate('some-token')
+    expect(result.kind).toBe('found')
+    if (result.kind === 'found') {
+      expect(result.photoUrl).toBe(
+        'https://project.supabase.co/storage/v1/object/public/employee-photos/some-token/photo',
+      )
+    }
+    expect(from).toHaveBeenCalledWith('employee-photos')
+    expect(getPublicUrl).toHaveBeenCalledWith('some-token/photo')
+  })
+
+  it('returns no photo URL when the employee has no photo', async () => {
+    rpc.mockResolvedValue({
+      data: [{ ...baseCertificate, has_photo: false, status: 'active' }],
+      error: null,
+    })
+    const result = await fetchPublicCertificate('some-token')
+    expect(result.kind).toBe('found')
+    if (result.kind === 'found') {
+      expect(result.photoUrl).toBeNull()
+    }
+    expect(getPublicUrl).not.toHaveBeenCalled()
   })
 })

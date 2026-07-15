@@ -59,6 +59,17 @@ const ALIGN_CLASS: Record<'right' | 'left' | 'center', string> = {
   center: 'text-center',
 }
 
+/**
+ * Same effect as the dir attribute/ALIGN_CLASS above, expressed as inline
+ * CSS too. Inline styles win over any stylesheet rule regardless of
+ * specificity, so this is the one setting that's guaranteed to be visible
+ * in the rendered field no matter what else is on the page.
+ */
+function directionStyle(style?: { dir: 'rtl' | 'ltr'; align: 'right' | 'left' | 'center' }) {
+  if (!style) return undefined
+  return { direction: style.dir, textAlign: style.align } as const
+}
+
 type EmployeeFormProps = {
   defaultValues?: Partial<EmployeeFormValues>
   existingPhotoUrl?: string | null
@@ -232,6 +243,7 @@ function EmployeeForm({
               <select
                 id={field.name}
                 dir={style?.dir}
+                style={directionStyle(style)}
                 {...register(field.name)}
                 className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
                   style ? ALIGN_CLASS[style.align] : ''
@@ -250,6 +262,7 @@ function EmployeeForm({
                   id={field.name}
                   type={field.type}
                   dir={field.type === 'date' ? undefined : style?.dir}
+                  style={field.type === 'date' ? undefined : directionStyle(style)}
                   list={SUGGESTABLE_FIELDS.has(field.name) ? `${field.name}-suggestions` : undefined}
                   {...register(
                     field.name,

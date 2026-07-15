@@ -67,6 +67,28 @@ function PrintEmployeePage() {
     }
   }
 
+  async function handleExportImage() {
+    if (!employee || !employeeCardTemplateUrl) return
+    setIsExporting(true)
+    setExportMessage(null)
+    try {
+      const { exportEmployeeCardImage } = await import('../../lib/employeeCardPdf')
+      const { warnings } = await exportEmployeeCardImage({
+        templateUrl: employeeCardTemplateUrl,
+        employee,
+        publicUrl: getEmployeePublicUrl(employee.public_token),
+        layout: employeeCardLayout,
+      })
+      if (warnings.length > 0) {
+        setExportMessage(`تم تنزيل الصورة، لكن تعذر تضمين — ${warnings.join(' | ')}`)
+      }
+    } catch {
+      setExportMessage('تعذر تصدير الصورة، يرجى المحاولة مرة أخرى')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   if (loadError) return <p className="p-8 text-expired">{loadError}</p>
   if (!employee) return <p className="p-8 text-text-secondary">جارٍ التحميل...</p>
 
@@ -87,6 +109,14 @@ function PrintEmployeePage() {
           className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
         >
           طباعة
+        </button>
+        <button
+          type="button"
+          onClick={handleExportImage}
+          disabled={!employeeCardTemplateUrl || isExporting}
+          className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted disabled:opacity-60"
+        >
+          {isExporting ? 'جارٍ التصدير...' : 'تنزيل كصورة عالية الوضوح'}
         </button>
         <button
           type="button"

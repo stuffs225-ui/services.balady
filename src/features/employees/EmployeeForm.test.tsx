@@ -115,15 +115,6 @@ describe('EmployeeForm', () => {
     })
   })
 
-  it('does not fetch suggestions or show the ID-scan section in preview mode', () => {
-    render(
-      <EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} previewMode />,
-    )
-
-    expect(mockGetEmployeeFieldSuggestions).not.toHaveBeenCalled()
-    expect(screen.queryByLabelText('استخراج البيانات من صورة الهوية (اختياري)')).toBeNull()
-  })
-
   it('fills fields extracted from an uploaded ID card image', async () => {
     render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
 

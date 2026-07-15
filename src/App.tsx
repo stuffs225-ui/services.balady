@@ -12,7 +12,6 @@ import PrintEmployeePage from './features/employees/PrintEmployeePage'
 import PublicEmployeePage from './features/public/PublicEmployeePage'
 import SettingsPage from './features/settings/SettingsPage'
 import EmployeeCardTemplatePage from './features/settings/EmployeeCardTemplatePage'
-import EmployeeFormStylePage from './features/settings/EmployeeFormStylePage'
 import NotFoundPage from './features/misc/NotFoundPage'
 
 function App() {
@@ -35,7 +34,6 @@ function App() {
             <Route path="/employees/:id" element={<EmployeeDetailsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/employee-card-template" element={<EmployeeCardTemplatePage />} />
-            <Route path="/settings/employee-form-style" element={<EmployeeFormStylePage />} />
           </Route>
           <Route path="/employees/:id/print" element={<PrintEmployeePage />} />
         </Route>

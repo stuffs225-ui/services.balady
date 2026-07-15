@@ -3,8 +3,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { employeeFormSchema, type EmployeeFormValues } from '../../lib/employeeSchema'
 import { gregorianToHijri } from '../../lib/dates'
-import { useSiteSettings } from '../settings/useSiteSettings'
-import type { EmployeeFormFieldStyles, EmployeeFormStylableField } from '../../types/database'
 import { getEmployeeFieldSuggestions, type EmployeeSuggestionField } from './api'
 import { extractIdCardFields } from '../../lib/idCardOcr'
 
@@ -19,6 +17,25 @@ const SUGGESTABLE_FIELDS = new Set<TextFieldName>([
   'licenseNumber',
   'establishmentName',
   'establishmentNumber',
+])
+
+/**
+ * Plain Arabic text fields — right-to-left, typed and read the same way as
+ * the read-only fields on the employee details/public certificate pages.
+ * Every other text field (identity/certificate/license/establishment
+ * numbers, Hijri dates) is a digit/code sequence and stays LTR, still
+ * anchored to the right of its box — the same convention already used on
+ * the public certificate page's field list.
+ */
+const RTL_TEXT_FIELDS = new Set<TextFieldName>([
+  'authorityName',
+  'municipalityName',
+  'employeeName',
+  'gender',
+  'nationality',
+  'profession',
+  'programType',
+  'establishmentName',
 ])
 
 type FieldConfig = {
@@ -53,21 +70,9 @@ const FIELDS: FieldConfig[] = [
   { name: 'establishmentNumber', label: 'رقم المنشأة', type: 'text' },
 ]
 
-const ALIGN_CLASS: Record<'right' | 'left' | 'center', string> = {
-  right: 'text-right',
-  left: 'text-left',
-  center: 'text-center',
-}
-
-/**
- * Same effect as the dir attribute/ALIGN_CLASS above, expressed as inline
- * CSS too. Inline styles win over any stylesheet rule regardless of
- * specificity, so this is the one setting that's guaranteed to be visible
- * in the rendered field no matter what else is on the page.
- */
-function directionStyle(style?: { dir: 'rtl' | 'ltr'; align: 'right' | 'left' | 'center' }) {
-  if (!style) return undefined
-  return { direction: style.dir, textAlign: style.align } as const
+function directionFor(field: FieldConfig): 'rtl' | 'ltr' | undefined {
+  if (field.type === 'date') return undefined
+  return RTL_TEXT_FIELDS.has(field.name) ? 'rtl' : 'ltr'
 }
 
 type EmployeeFormProps = {
@@ -77,11 +82,6 @@ type EmployeeFormProps = {
   submitLabel: string
   onSubmit: (values: EmployeeFormValues) => void | Promise<void>
   formError?: string | null
-  /** Overrides the saved field styles — used for the live preview in Settings. */
-  fieldStylesOverride?: EmployeeFormFieldStyles
-  /** Used by the Settings live preview: skips the ID-scan and suggestions
-   * features, which are meaningless against fictional preview data. */
-  previewMode?: boolean
 }
 
 function EmployeeForm({
@@ -91,8 +91,6 @@ function EmployeeForm({
   submitLabel,
   onSubmit,
   formError,
-  fieldStylesOverride,
-  previewMode = false,
 }: EmployeeFormProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(existingPhotoUrl ?? null)
   const [fieldSuggestions, setFieldSuggestions] = useState<
@@ -100,8 +98,6 @@ function EmployeeForm({
   >({})
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractMessage, setExtractMessage] = useState<string | null>(null)
-  const { employeeFormFieldStyles } = useSiteSettings()
-  const fieldStyles = fieldStylesOverride ?? employeeFormFieldStyles
 
   const {
     register,
@@ -114,7 +110,6 @@ function EmployeeForm({
   })
 
   useEffect(() => {
-    if (previewMode) return
     let cancelled = false
 
     getEmployeeFieldSuggestions()
@@ -128,7 +123,7 @@ function EmployeeForm({
     return () => {
       cancelled = true
     }
-  }, [previewMode])
+  }, [])
 
   async function handleIdCardChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -168,38 +163,32 @@ function EmployeeForm({
     }
   }
 
-  function styleFor(name: TextFieldName) {
-    return fieldStyles[name as EmployeeFormStylableField]
-  }
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
-      {!previewMode && (
-        <div className="rounded-field border border-dashed border-divider p-4">
-          <label htmlFor="idCardScan" className="mb-2 block text-sm font-bold text-text-primary">
-            استخراج البيانات من صورة الهوية (اختياري)
-          </label>
-          <p className="mb-3 text-xs text-text-secondary">
-            ارفع صورة هوية مقيم أو هوية وطنية لتعبئة الحقول المتاحة تلقائيًا. تتم معالجة الصورة
-            داخل المتصفح فقط ولا يتم حفظها أو رفعها لأي خادم، ويبقى عليك مراجعة النتيجة وإكمال
-            الحقول غير الموجودة على الهوية يدويًا.
-          </p>
-          <input
-            id="idCardScan"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleIdCardChange}
-            disabled={isExtracting}
-            className="text-sm"
-          />
-          {isExtracting && (
-            <p className="mt-2 text-sm text-text-secondary">جارٍ استخراج البيانات...</p>
-          )}
-          {extractMessage && !isExtracting && (
-            <p className="mt-2 text-sm text-brand-primary">{extractMessage}</p>
-          )}
-        </div>
-      )}
+      <div className="rounded-field border border-dashed border-divider p-4">
+        <label htmlFor="idCardScan" className="mb-2 block text-sm font-bold text-text-primary">
+          استخراج البيانات من صورة الهوية (اختياري)
+        </label>
+        <p className="mb-3 text-xs text-text-secondary">
+          ارفع صورة هوية مقيم أو هوية وطنية لتعبئة الحقول المتاحة تلقائيًا. تتم معالجة الصورة داخل
+          المتصفح فقط ولا يتم حفظها أو رفعها لأي خادم، ويبقى عليك مراجعة النتيجة وإكمال الحقول غير
+          الموجودة على الهوية يدويًا.
+        </p>
+        <input
+          id="idCardScan"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleIdCardChange}
+          disabled={isExtracting}
+          className="text-sm"
+        />
+        {isExtracting && (
+          <p className="mt-2 text-sm text-text-secondary">جارٍ استخراج البيانات...</p>
+        )}
+        {extractMessage && !isExtracting && (
+          <p className="mt-2 text-sm text-brand-primary">{extractMessage}</p>
+        )}
+      </div>
 
       <div>
         <label htmlFor="employeePhoto" className="mb-2 block text-sm font-bold text-text-primary">
@@ -231,7 +220,7 @@ function EmployeeForm({
       </div>
 
       {FIELDS.map((field) => {
-        const style = styleFor(field.name)
+        const dir = directionFor(field)
 
         return (
           <div key={field.name}>
@@ -242,12 +231,10 @@ function EmployeeForm({
             {field.type === 'select' ? (
               <select
                 id={field.name}
-                dir={style?.dir}
-                style={directionStyle(style)}
+                dir={dir}
+                style={{ direction: dir, textAlign: 'right' }}
                 {...register(field.name)}
-                className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
-                  style ? ALIGN_CLASS[style.align] : ''
-                }`}
+                className="w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-right text-text-primary outline-none focus:border-brand-primary"
               >
                 <option value="">اختر</option>
                 {field.options?.map((option) => (
@@ -261,8 +248,8 @@ function EmployeeForm({
                 <input
                   id={field.name}
                   type={field.type}
-                  dir={field.type === 'date' ? undefined : style?.dir}
-                  style={field.type === 'date' ? undefined : directionStyle(style)}
+                  dir={dir}
+                  style={field.type === 'date' ? undefined : { direction: dir, textAlign: 'right' }}
                   list={SUGGESTABLE_FIELDS.has(field.name) ? `${field.name}-suggestions` : undefined}
                   {...register(
                     field.name,
@@ -278,7 +265,7 @@ function EmployeeForm({
                       : undefined,
                   )}
                   className={`w-full rounded-field border border-input-border bg-input-bg px-4 py-3 text-text-primary outline-none focus:border-brand-primary ${
-                    field.type !== 'date' && style ? ALIGN_CLASS[style.align] : ''
+                    field.type === 'date' ? '' : 'text-right'
                   }`}
                 />
                 {SUGGESTABLE_FIELDS.has(field.name) && (

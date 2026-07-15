@@ -82,12 +82,42 @@ export async function exportEmployeeCardPdf({
   return { warnings }
 }
 
+export type ExportEmployeeCardImageResult = ExportEmployeeCardPdfResult
+
+/**
+ * Downloads the front face of the card as a standalone high-resolution PNG
+ * (2x the card's normal 1004x638 export size), for admins who'd rather
+ * convert it to a PDF themselves than rely on this app's PDF step.
+ */
+export async function exportEmployeeCardImage({
+  templateUrl,
+  employee,
+  publicUrl,
+  layout,
+  fileName,
+}: Omit<ExportEmployeeCardPdfOptions, 'backTemplateUrl'>): Promise<ExportEmployeeCardImageResult> {
+  const warnings: string[] = []
+  const dataUrl = await renderCardFaceToDataUrl(templateUrl, employee, publicUrl, layout, warnings, 2)
+  downloadDataUrl(dataUrl, fileName || `employee-card-${employee.public_token}.png`)
+  return { warnings }
+}
+
+function downloadDataUrl(dataUrl: string, fileName: string) {
+  const link = document.createElement('a')
+  link.href = dataUrl
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 async function renderCardFaceToDataUrl(
   templateUrl: string,
   employee: Employee,
   publicUrl: string,
   layout: EmployeeCardLayout,
   warnings: string[],
+  pixelRatio = 1,
 ): Promise<string> {
   // Resolve the photo/QR *before* mounting, and pass them in as fixed
   // values. Previously these were fetched by the renderer's own effects
@@ -146,7 +176,7 @@ async function renderCardFaceToDataUrl(
     return await toPng(container, {
       width: TEMPLATE_NATURAL_WIDTH,
       height: TEMPLATE_NATURAL_HEIGHT,
-      pixelRatio: 1,
+      pixelRatio,
       cacheBust: true,
       // The card only ever uses the system font stack (Arial/Tahoma), so
       // there's nothing to embed — skip it to avoid html-to-image scanning

@@ -13,7 +13,7 @@ import { fetchPublicCertificate } from './api'
 
 const baseCertificate = {
   employee_name: 'موظف تجريبي',
-  identity_number_masked: '*******609',
+  identity_number: '*******609',
   gender: 'ذكر',
   nationality: 'الجنسية التجريبية',
   profession: 'محاسب',

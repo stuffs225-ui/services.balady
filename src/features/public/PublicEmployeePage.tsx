@@ -5,7 +5,6 @@ import AccessibilityToolbar from '../../components/public/AccessibilityToolbar'
 import PublicHeader from '../../components/public/PublicHeader'
 import PublicPageTitle from '../../components/public/PublicPageTitle'
 import EmployeePortrait from '../../components/public/EmployeePortrait'
-import CertificateStatusBanner from '../../components/public/CertificateStatusBanner'
 import CertificateFieldList from '../../components/public/CertificateFieldList'
 import PublicFooter from '../../components/public/PublicFooter'
 import VerificationLoadingState from '../../components/public/VerificationLoadingState'
@@ -73,7 +72,6 @@ function PublicEmployeePage() {
           {result !== 'loading' && result.kind === 'found' && (
             <>
               <PublicPageTitle />
-              <CertificateStatusBanner status={result.certificate.status} />
               <EmployeePortrait
                 photoUrl={result.photoUrl}
                 employeeName={result.certificate.employee_name}

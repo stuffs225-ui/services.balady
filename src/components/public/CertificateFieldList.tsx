@@ -23,7 +23,7 @@ function CertificateFieldList({
       <ReadOnlyField label="الاسم" value={certificate.employee_name} largeText={largeText} />
       <ReadOnlyField
         label="رقم الهوية"
-        value={certificate.identity_number_masked}
+        value={certificate.identity_number}
         dir="ltr"
         monospace
         largeText={largeText}

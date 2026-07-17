@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listEmployees, deactivateEmployee, deleteEmployee, getEmployeePhotoUrl } from './api'
+import {
+  listEmployees,
+  deactivateEmployee,
+  deleteEmployee,
+  getEmployeePhotoUrl,
+  getEmployeeStats,
+  type EmployeeStats,
+} from './api'
 import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
@@ -14,6 +21,22 @@ function EmployeeListPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [stats, setStats] = useState<EmployeeStats | null>(null)
+
+  // Independent of the search box/filter — always reflects every employee.
+  useEffect(() => {
+    let cancelled = false
+    getEmployeeStats()
+      .then((data) => {
+        if (!cancelled) setStats(data)
+      })
+      .catch(() => {
+        // Non-critical summary — the list itself still works without it.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -78,6 +101,11 @@ function EmployeeListPage() {
     }
     await deleteEmployee(employee.id, employee.employee_photo_path)
     setEmployees((prev) => prev.filter((item) => item.id !== employee.id))
+    getEmployeeStats()
+      .then(setStats)
+      .catch(() => {
+        // Non-critical summary — leave the previous numbers showing.
+      })
   }
 
   return (
@@ -91,6 +119,27 @@ function EmployeeListPage() {
           إضافة موظف جديد
         </Link>
       </div>
+
+      {stats && (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-field border border-divider p-4">
+            <p className="text-sm font-bold text-text-secondary">إجمالي عدد الموظفين</p>
+            <p className="mt-1 text-2xl font-bold text-heading">{stats.totalEmployees}</p>
+          </div>
+          <div className="rounded-field border border-divider p-4">
+            <p className="text-sm font-bold text-text-secondary">إجمالي عدد الزيارات (كل الموظفين)</p>
+            <p className="mt-1 text-2xl font-bold text-heading">{stats.totalVisits}</p>
+          </div>
+          <div className="rounded-field border border-divider p-4">
+            <p className="text-sm font-bold text-text-secondary">
+              متوسط الزيارات لكل موظف (آخر 3 أيام)
+            </p>
+            <p className="mt-1 text-2xl font-bold text-heading">
+              {stats.averageVisitsLast3Days.toFixed(1)}
+            </p>
+          </div>
+        </div>
+      )}
 
       <input
         type="search"

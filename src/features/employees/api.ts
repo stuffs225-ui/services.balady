@@ -47,6 +47,42 @@ export async function getEmployeeById(id: string): Promise<Employee | null> {
   return data
 }
 
+export type EmployeeStats = {
+  totalEmployees: number
+  /** All-time sum of every employee's visit_count. */
+  totalVisits: number
+  /** Visit events (verify_certificate() lookups) in the last 3 days, divided by the total employee count. */
+  averageVisitsLast3Days: number
+}
+
+const RECENT_VISITS_WINDOW_DAYS = 3
+
+/**
+ * Summary stats for the employees list page — independent of any search
+ * filter, so they always reflect every employee regardless of what's typed
+ * in the search box.
+ */
+export async function getEmployeeStats(): Promise<EmployeeStats> {
+  const { data: rows, error: employeesError } = await supabase.from('employees').select('visit_count')
+  if (employeesError) throw employeesError
+
+  const totalEmployees = rows?.length ?? 0
+  const totalVisits = (rows ?? []).reduce((sum, row) => sum + row.visit_count, 0)
+
+  const since = new Date(
+    Date.now() - RECENT_VISITS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString()
+  const { count: recentVisitCount, error: eventsError } = await supabase
+    .from('employee_visit_events')
+    .select('id', { count: 'exact', head: true })
+    .gte('visited_at', since)
+  if (eventsError) throw eventsError
+
+  const averageVisitsLast3Days = totalEmployees > 0 ? (recentVisitCount ?? 0) / totalEmployees : 0
+
+  return { totalEmployees, totalVisits, averageVisitsLast3Days }
+}
+
 function photoPathForToken(token: string): string {
   return `${token}/photo`
 }

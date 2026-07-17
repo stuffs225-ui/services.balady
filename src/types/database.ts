@@ -41,6 +41,18 @@ export type EmployeeUpdate = Partial<
   Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at' | 'visit_count'>
 >
 
+/**
+ * One row per successful verify_certificate() lookup, timestamped — unlike
+ * the cumulative employees.visit_count counter, this is what lets the
+ * admin see recent-activity stats (e.g. "average visits in the last 3
+ * days"), which a single running total can't answer on its own.
+ */
+export type EmployeeVisitEvent = {
+  id: string
+  employee_id: string
+  visited_at: string
+}
+
 export type CertificateStatus = 'active' | 'expired' | 'revoked'
 
 export type PublicCertificate = {
@@ -190,6 +202,12 @@ export type Database = {
         Row: SiteSettings
         Insert: never
         Update: SiteSettingsUpdate
+        Relationships: []
+      }
+      employee_visit_events: {
+        Row: EmployeeVisitEvent
+        Insert: never
+        Update: never
         Relationships: []
       }
     }

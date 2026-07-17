@@ -9,12 +9,14 @@ const mockListEmployees = vi.fn()
 const mockDeactivateEmployee = vi.fn()
 const mockDeleteEmployee = vi.fn()
 const mockGetEmployeePhotoUrl = vi.fn()
+const mockGetEmployeeStats = vi.fn()
 
 vi.mock('./api', () => ({
   listEmployees: (...args: unknown[]) => mockListEmployees(...args),
   deactivateEmployee: (...args: unknown[]) => mockDeactivateEmployee(...args),
   deleteEmployee: (...args: unknown[]) => mockDeleteEmployee(...args),
   getEmployeePhotoUrl: (...args: unknown[]) => mockGetEmployeePhotoUrl(...args),
+  getEmployeeStats: (...args: unknown[]) => mockGetEmployeeStats(...args),
 }))
 
 vi.mock('../../lib/qrcode', () => ({
@@ -64,6 +66,11 @@ describe('EmployeeListPage permanent delete', () => {
     vi.clearAllMocks()
     mockListEmployees.mockResolvedValue([FAKE_EMPLOYEE])
     mockGetEmployeePhotoUrl.mockResolvedValue(null)
+    mockGetEmployeeStats.mockResolvedValue({
+      totalEmployees: 1,
+      totalVisits: 0,
+      averageVisitsLast3Days: 0,
+    })
   })
 
   it('deletes the employee and removes them from the list when confirmed', async () => {
@@ -92,6 +99,54 @@ describe('EmployeeListPage permanent delete', () => {
     expect(mockDeleteEmployee).not.toHaveBeenCalled()
     expect(screen.getByText('موظف تجريبي')).toBeInTheDocument()
 
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('EmployeeListPage stats summary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListEmployees.mockResolvedValue([FAKE_EMPLOYEE])
+    mockGetEmployeePhotoUrl.mockResolvedValue(null)
+  })
+
+  it('shows the total employee count, total visits, and average visits over the last 3 days', async () => {
+    mockGetEmployeeStats.mockResolvedValue({
+      totalEmployees: 12,
+      totalVisits: 340,
+      averageVisitsLast3Days: 4.5,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('12')).toBeInTheDocument()
+    expect(screen.getByText('340')).toBeInTheDocument()
+    expect(screen.getByText('4.5')).toBeInTheDocument()
+  })
+
+  it('does not show the stats summary while it has not loaded yet, and the rest of the page still works', async () => {
+    mockGetEmployeeStats.mockReturnValue(new Promise(() => {}))
+
+    renderPage()
+
+    await screen.findByText('موظف تجريبي')
+    expect(screen.queryByText('إجمالي عدد الموظفين')).not.toBeInTheDocument()
+  })
+
+  it('refreshes the stats after a permanent delete', async () => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    mockDeleteEmployee.mockResolvedValue(undefined)
+    mockGetEmployeeStats
+      .mockResolvedValueOnce({ totalEmployees: 1, totalVisits: 5, averageVisitsLast3Days: 1 })
+      .mockResolvedValueOnce({ totalEmployees: 0, totalVisits: 0, averageVisitsLast3Days: 0 })
+
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+    expect(await screen.findByText('1')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'حذف نهائي' }))
+
+    await waitFor(() => expect(mockGetEmployeeStats).toHaveBeenCalledTimes(2))
     vi.unstubAllGlobals()
   })
 })

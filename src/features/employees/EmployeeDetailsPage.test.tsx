@@ -8,12 +8,14 @@ import type { Employee } from '../../types/database'
 const mockGetEmployeeById = vi.fn()
 const mockGetEmployeePhotoUrl = vi.fn()
 const mockDeactivateEmployee = vi.fn()
+const mockReactivateEmployee = vi.fn()
 const mockDeleteEmployee = vi.fn()
 
 vi.mock('./api', () => ({
   getEmployeeById: (...args: unknown[]) => mockGetEmployeeById(...args),
   getEmployeePhotoUrl: (...args: unknown[]) => mockGetEmployeePhotoUrl(...args),
   deactivateEmployee: (...args: unknown[]) => mockDeactivateEmployee(...args),
+  reactivateEmployee: (...args: unknown[]) => mockReactivateEmployee(...args),
   deleteEmployee: (...args: unknown[]) => mockDeleteEmployee(...args),
 }))
 
@@ -111,5 +113,47 @@ describe('EmployeeDetailsPage visit count', () => {
     await screen.findByText('تفاصيل الموظف')
 
     expect(screen.getByText('عدد الزيارات: 42')).toBeInTheDocument()
+  })
+})
+
+describe('EmployeeDetailsPage deactivate/reactivate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetEmployeePhotoUrl.mockResolvedValue(null)
+  })
+
+  it('shows only "إلغاء التفعيل" for an active employee, not "إعادة تفعيل"', async () => {
+    mockGetEmployeeById.mockResolvedValue(FAKE_EMPLOYEE)
+    renderPage()
+    await screen.findByText('تفاصيل الموظف')
+
+    expect(screen.getByRole('button', { name: 'إلغاء التفعيل' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'إعادة تفعيل' })).not.toBeInTheDocument()
+  })
+
+  it('shows only "إعادة تفعيل" for a deactivated employee, not "إلغاء التفعيل"', async () => {
+    mockGetEmployeeById.mockResolvedValue({ ...FAKE_EMPLOYEE, is_active: false })
+    renderPage()
+    await screen.findByText('تفاصيل الموظف')
+
+    expect(screen.getByRole('button', { name: 'إعادة تفعيل' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'إلغاء التفعيل' })).not.toBeInTheDocument()
+  })
+
+  it('reactivates the employee and swaps the button in place, without navigating away', async () => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    mockGetEmployeeById.mockResolvedValue({ ...FAKE_EMPLOYEE, is_active: false })
+    mockReactivateEmployee.mockResolvedValue(undefined)
+
+    renderPage()
+    await screen.findByText('تفاصيل الموظف')
+
+    await userEvent.click(screen.getByRole('button', { name: 'إعادة تفعيل' }))
+
+    await waitFor(() => expect(mockReactivateEmployee).toHaveBeenCalledWith('emp-1'))
+    expect(await screen.findByRole('button', { name: 'إلغاء التفعيل' })).toBeInTheDocument()
+    expect(screen.queryByText('قائمة الموظفين')).not.toBeInTheDocument()
+
+    vi.unstubAllGlobals()
   })
 })

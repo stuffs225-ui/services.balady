@@ -1,14 +1,77 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import PublicEmployeePage from './PublicEmployeePage'
 import type { PublicCertificateResult } from './api'
+import {
+  navLinks as defaultNavLinks,
+  footerLinks as defaultFooterLinks,
+  defaultFooterCopyrightText,
+  defaultFooterSupportText,
+  siteIdentity,
+  primaryActionLink as defaultPrimaryActionLink,
+} from '../../config/siteLinks'
+import { mergeEmployeeCardLayout } from '../../config/employeeCardLayout'
 
 const mockFetch = vi.fn<(token: string) => Promise<PublicCertificateResult>>()
 vi.mock('./api', () => ({
   fetchPublicCertificate: (token: string) => mockFetch(token),
 }))
+
+const mockUseSiteSettings = vi.fn()
+vi.mock('../settings/useSiteSettings', () => ({
+  useSiteSettings: () => mockUseSiteSettings(),
+}))
+
+// Mirrors useSiteSettings' own default (pre-load-failure-fallback) state,
+// so mocking the hook here doesn't starve every other consumer on the page
+// (PublicFooter, PublicTrustBanner, AccessibilityToolbar, ...) of fields
+// they need.
+const DEFAULT_SITE_SETTINGS = {
+  logoUrl: null,
+  logoLinkHref: null as string | null,
+  navLinks: defaultNavLinks,
+  footerLinks: defaultFooterLinks,
+  footerBadges: [],
+  footerCopyrightText: defaultFooterCopyrightText,
+  footerSupportText: defaultFooterSupportText,
+  trustBannerText: siteIdentity.demoDisclaimer,
+  accessibilityLinkHref: null,
+  headerTitleText: siteIdentity.nameAr,
+  headerSubtitleText: `(${siteIdentity.demoLabel})`,
+  logoSize: 96,
+  footerBadgeSize: 56,
+  employeeCardTemplateUrl: null,
+  employeeCardBackTemplateUrl: null,
+  employeeCardLayout: mergeEmployeeCardLayout(null),
+  primaryActionLabel: defaultPrimaryActionLink.label,
+  primaryActionHref: defaultPrimaryActionLink.href,
+  isLoading: false,
+}
+
+const REVOKED_CERTIFICATE = {
+  employee_name: 'موظف ملغى تجريبي',
+  identity_number: '1234567609',
+  gender: 'ذكر',
+  nationality: 'الجنسية التجريبية',
+  profession: 'محاسب',
+  authority_name: 'أمانة المنطقة التجريبية',
+  municipality_name: 'بلدية النموذج',
+  certificate_number: 'CERT-DEMO-REVOKED',
+  license_number: null,
+  establishment_name: 'شركة النموذج التجريبية',
+  establishment_number: null,
+  program_type: null,
+  issue_date_hijri: null,
+  issue_date_gregorian: '2026-06-30',
+  expiry_date_hijri: null,
+  expiry_date_gregorian: '2027-06-30',
+  program_completion_date_hijri: null,
+  has_photo: false,
+  employee_photo_crop: null,
+  status: 'revoked' as const,
+}
 
 function renderAtToken(token: string) {
   return render(
@@ -21,6 +84,10 @@ function renderAtToken(token: string) {
 }
 
 describe('PublicEmployeePage', () => {
+  beforeEach(() => {
+    mockUseSiteSettings.mockReturnValue(DEFAULT_SITE_SETTINGS)
+  })
+
   it('shows a generic not-found state for an invalid token', async () => {
     mockFetch.mockResolvedValue({ kind: 'not-found' })
     renderAtToken('does-not-exist')
@@ -175,5 +242,57 @@ describe('PublicEmployeePage', () => {
     const content = container.querySelector('.public-content')!
     expect(main.className).not.toContain('flex-1')
     expect(content.className).not.toMatch(/pb-\[clamp/)
+  })
+})
+
+describe('PublicEmployeePage revoked-certificate redirect', () => {
+  beforeEach(() => {
+    vi.stubGlobal('location', { ...window.location, replace: vi.fn() })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('redirects to the configured logo link instead of showing a revoked certificate', async () => {
+    mockUseSiteSettings.mockReturnValue({
+      ...DEFAULT_SITE_SETTINGS,
+      logoLinkHref: 'https://example.test/organization',
+    })
+    mockFetch.mockResolvedValue({ kind: 'found', photoUrl: null, certificate: REVOKED_CERTIFICATE })
+
+    renderAtToken('revoked-token')
+
+    await waitFor(() =>
+      expect(window.location.replace).toHaveBeenCalledWith('https://example.test/organization'),
+    )
+    expect(screen.queryByText('موظف ملغى تجريبي')).not.toBeInTheDocument()
+  })
+
+  it('falls back to showing the revoked certificate page when no logo link is configured', async () => {
+    mockUseSiteSettings.mockReturnValue(DEFAULT_SITE_SETTINGS)
+    mockFetch.mockResolvedValue({ kind: 'found', photoUrl: null, certificate: REVOKED_CERTIFICATE })
+
+    renderAtToken('revoked-token')
+
+    expect(await screen.findByText('موظف ملغى تجريبي')).toBeInTheDocument()
+    expect(window.location.replace).not.toHaveBeenCalled()
+  })
+
+  it('does not redirect an active certificate', async () => {
+    mockUseSiteSettings.mockReturnValue({
+      ...DEFAULT_SITE_SETTINGS,
+      logoLinkHref: 'https://example.test/organization',
+    })
+    mockFetch.mockResolvedValue({
+      kind: 'found',
+      photoUrl: null,
+      certificate: { ...REVOKED_CERTIFICATE, status: 'active' },
+    })
+
+    renderAtToken('active-token')
+
+    expect(await screen.findByText('موظف ملغى تجريبي')).toBeInTheDocument()
+    expect(window.location.replace).not.toHaveBeenCalled()
   })
 })

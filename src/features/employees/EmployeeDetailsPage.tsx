@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { getEmployeeById, getEmployeePhotoUrl, deactivateEmployee, deleteEmployee } from './api'
+import {
+  getEmployeeById,
+  getEmployeePhotoUrl,
+  deactivateEmployee,
+  reactivateEmployee,
+  deleteEmployee,
+} from './api'
 import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
@@ -101,6 +107,13 @@ function EmployeeDetailsPage() {
     navigate('/employees')
   }
 
+  async function handleReactivate() {
+    if (!employee) return
+    if (!confirm('هل أنت متأكد من إعادة تفعيل هذا الموظف؟')) return
+    await reactivateEmployee(employee.id)
+    setEmployee((prev) => (prev ? { ...prev, is_active: true } : prev))
+  }
+
   async function handleDelete() {
     if (!employee) return
     if (
@@ -174,13 +187,23 @@ function EmployeeDetailsPage() {
             >
               فتح الصفحة العامة
             </a>
-            <button
-              type="button"
-              onClick={handleDeactivate}
-              className="rounded-button border border-expired px-4 py-2 text-sm font-bold text-expired hover:bg-red-50"
-            >
-              إلغاء التفعيل
-            </button>
+            {employee.is_active ? (
+              <button
+                type="button"
+                onClick={handleDeactivate}
+                className="rounded-button border border-expired px-4 py-2 text-sm font-bold text-expired hover:bg-red-50"
+              >
+                إلغاء التفعيل
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleReactivate}
+                className="rounded-button border border-brand-primary px-4 py-2 text-sm font-bold text-brand-primary hover:bg-brand-primary-soft/10"
+              >
+                إعادة تفعيل
+              </button>
+            )}
             <button
               type="button"
               onClick={handleDelete}

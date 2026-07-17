@@ -196,6 +196,12 @@ export async function deactivateEmployee(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** Reverses deactivateEmployee — the employee's certificate becomes publicly viewable/active again. */
+export async function reactivateEmployee(id: string): Promise<void> {
+  const { error } = await supabase.from('employees').update({ is_active: true }).eq('id', id)
+  if (error) throw error
+}
+
 /**
  * Permanently erases the employee's record — unlike deactivateEmployee,
  * this cannot be undone: the row is gone, and it never appears in the

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   listEmployees,
   deactivateEmployee,
+  reactivateEmployee,
   deleteEmployee,
   getEmployeePhotoUrl,
   getEmployeeStats,
@@ -88,6 +89,14 @@ function EmployeeListPage() {
     await deactivateEmployee(id)
     setEmployees((prev) =>
       prev.map((employee) => (employee.id === id ? { ...employee, is_active: false } : employee)),
+    )
+  }
+
+  async function handleReactivate(id: string) {
+    if (!confirm('هل أنت متأكد من إعادة تفعيل هذا الموظف؟')) return
+    await reactivateEmployee(id)
+    setEmployees((prev) =>
+      prev.map((employee) => (employee.id === id ? { ...employee, is_active: true } : employee)),
     )
   }
 
@@ -235,13 +244,21 @@ function EmployeeListPage() {
                   >
                     طباعة
                   </Link>
-                  {employee.is_active && (
+                  {employee.is_active ? (
                     <button
                       type="button"
                       onClick={() => handleDeactivate(employee.id)}
                       className="rounded-button border border-expired px-3 py-1.5 text-xs font-bold text-expired hover:bg-red-50"
                     >
                       إلغاء التفعيل
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleReactivate(employee.id)}
+                      className="rounded-button border border-brand-primary px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary-soft/10"
+                    >
+                      إعادة تفعيل
                     </button>
                   )}
                   <button

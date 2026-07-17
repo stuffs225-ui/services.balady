@@ -19,7 +19,23 @@ function PublicEmployeePage() {
   const [result, setResult] = useState<PublicCertificateResult | 'loading'>('loading')
   const [datePreference, setDatePreference] = useState<DatePreference | null>(null)
   const [isLargeText, setIsLargeText] = useState(false)
-  const { accessibilityLinkHref } = useSiteSettings()
+  const { accessibilityLinkHref, logoLinkHref, isLoading: settingsLoading } = useSiteSettings()
+
+  const isRevoked = result !== 'loading' && result.kind === 'found' && result.certificate.status === 'revoked'
+  // A deactivated employee's certificate is never shown to the public —
+  // instead the visitor is bounced to the organization's own site (the
+  // same URL configured for the header logo link). Waiting on
+  // settingsLoading avoids a flash of the certificate before that URL is
+  // known; if none is configured at all, there's nowhere to send the
+  // visitor, so the certificate page's own "revoked" status is shown
+  // as a fallback instead.
+  const isRedirectingToOrgSite = isRevoked && (settingsLoading || Boolean(logoLinkHref))
+
+  useEffect(() => {
+    if (isRevoked && !settingsLoading && logoLinkHref) {
+      window.location.replace(logoLinkHref)
+    }
+  }, [isRevoked, settingsLoading, logoLinkHref])
 
   useEffect(() => {
     let cancelled = false
@@ -69,7 +85,14 @@ function PublicEmployeePage() {
             <VerificationNetworkErrorState />
           )}
 
-          {result !== 'loading' && result.kind === 'found' && (
+          {result !== 'loading' && result.kind === 'found' && isRedirectingToOrgSite && (
+            <>
+              <PublicPageTitle />
+              <VerificationLoadingState />
+            </>
+          )}
+
+          {result !== 'loading' && result.kind === 'found' && !isRedirectingToOrgSite && (
             <>
               <PublicPageTitle />
               <EmployeePortrait

@@ -23,6 +23,7 @@ type TextFieldName = Exclude<keyof EmployeeFormValues, 'employeePhoto' | 'employ
 const SUGGESTABLE_FIELDS = new Set<TextFieldName>([
   'authorityName',
   'municipalityName',
+  'nationality',
   'profession',
   'programType',
   'programCompletionDateHijri',

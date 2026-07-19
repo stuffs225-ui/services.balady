@@ -241,6 +241,7 @@ export async function updateEmployeeCardOverrides(
 export const SUGGESTABLE_EMPLOYEE_FIELDS = [
   'authorityName',
   'municipalityName',
+  'nationality',
   'profession',
   'programType',
   'programCompletionDateHijri',
@@ -254,6 +255,7 @@ export type EmployeeSuggestionField = (typeof SUGGESTABLE_EMPLOYEE_FIELDS)[numbe
 const SUGGESTION_COLUMN_MAP: Record<EmployeeSuggestionField, string> = {
   authorityName: 'authority_name',
   municipalityName: 'municipality_name',
+  nationality: 'nationality',
   profession: 'profession',
   programType: 'program_type',
   programCompletionDateHijri: 'program_completion_date_hijri',

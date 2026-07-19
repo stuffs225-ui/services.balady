@@ -31,6 +31,6 @@ describe('NewEmployeePage default authority/municipality', () => {
     )
 
     expect((screen.getByLabelText('الأمانة') as HTMLInputElement).value).toBe('أمانة منطقة الرياض')
-    expect((screen.getByLabelText('البلدية') as HTMLInputElement).value).toBe('بلدية الشفاء')
+    expect((screen.getByLabelText('البلدية') as HTMLInputElement).value).toBe('بلدية السلي')
   })
 })

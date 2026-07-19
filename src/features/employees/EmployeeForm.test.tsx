@@ -26,6 +26,7 @@ describe('EmployeeForm', () => {
     mockGetEmployeeFieldSuggestions.mockResolvedValue({
       authorityName: ['أمانة تجريبية'],
       municipalityName: [],
+      nationality: ['الجنسية التجريبية'],
       profession: [],
       programType: [],
       programCompletionDateHijri: [],
@@ -179,6 +180,19 @@ describe('EmployeeForm', () => {
       const list = document.getElementById(input.getAttribute('list')!)
       expect(list?.querySelector('option[value="أمانة تجريبية"]')).toBeTruthy()
     })
+  })
+
+  it('offers previously used nationalities as a pick-list, while still allowing a new one to be typed', async () => {
+    render(<EmployeeForm isSubmitting={false} submitLabel="حفظ" onSubmit={vi.fn()} />)
+
+    const input = screen.getByLabelText('الجنسية') as HTMLInputElement
+    await waitFor(() => {
+      const list = document.getElementById(input.getAttribute('list')!)
+      expect(list?.querySelector('option[value="الجنسية التجريبية"]')).toBeTruthy()
+    })
+
+    fireEvent.change(input, { target: { value: 'جنسية تجريبية جديدة' } })
+    expect(input.value).toBe('جنسية تجريبية جديدة')
   })
 
   it('opens the crop calibration modal after selecting a photo, and only shows the preview once confirmed', async () => {

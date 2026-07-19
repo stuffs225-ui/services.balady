@@ -21,7 +21,7 @@ function buildDefaultValues(): Partial<EmployeeFormValues> {
     // municipality — pre-filled so the admin only needs to change it for
     // the rare exception, rather than typing it every time.
     authorityName: 'أمانة منطقة الرياض',
-    municipalityName: 'بلدية الشفاء',
+    municipalityName: 'بلدية السلي',
     issueDateGregorian: issue,
     issueDateHijri: gregorianToHijri(issue),
     expiryDateGregorian: expiry,

@@ -198,8 +198,8 @@ describe('EmployeeListPage deactivate/reactivate', () => {
     renderPage()
     await screen.findByText('موظف تجريبي')
 
-    const expectedText = new Date('2026-07-21T00:00:00Z').toLocaleDateString('ar-SA')
-    const unexpectedText = new Date('2026-01-01T00:00:00Z').toLocaleDateString('ar-SA')
+    const expectedText = new Date('2026-07-21T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')
+    const unexpectedText = new Date('2026-01-01T00:00:00Z').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn')
     expect(screen.getByText(expectedText)).toBeInTheDocument()
     if (expectedText !== unexpectedText) {
       expect(screen.queryByText(unexpectedText)).not.toBeInTheDocument()

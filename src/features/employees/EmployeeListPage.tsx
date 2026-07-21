@@ -13,7 +13,7 @@ import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
 import { generateQrDataUrl, downloadQrDataUrl } from '../../lib/qrcode'
 import { computeCertificateStatus, CERTIFICATE_STATUS_LABELS } from '../../lib/certificateStatus'
-import { getEmployeeRegistrationDate } from '../../lib/employeeRegistrationDate'
+import { getEmployeeRegistrationDate, formatGregorianDate } from '../../lib/employeeRegistrationDate'
 
 const PAGE_SIZE = 10
 
@@ -208,7 +208,7 @@ function EmployeeListPage() {
                     {employee.certificate_number} · {employee.profession} · {employee.establishment_name}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    {new Date(getEmployeeRegistrationDate(employee)).toLocaleDateString('ar-SA')}
+                    {formatGregorianDate(new Date(getEmployeeRegistrationDate(employee)))}
                   </p>
                 </div>
 

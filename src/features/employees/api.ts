@@ -196,9 +196,17 @@ export async function deactivateEmployee(id: string): Promise<void> {
   if (error) throw error
 }
 
-/** Reverses deactivateEmployee — the employee's certificate becomes publicly viewable/active again. */
+/**
+ * Reverses deactivateEmployee — the employee's certificate becomes publicly
+ * viewable/active again. Also stamps reactivated_at, which the employees
+ * list and the daily registration report then treat as this employee's
+ * effective registration date instead of created_at.
+ */
 export async function reactivateEmployee(id: string): Promise<void> {
-  const { error } = await supabase.from('employees').update({ is_active: true }).eq('id', id)
+  const { error } = await supabase
+    .from('employees')
+    .update({ is_active: true, reactivated_at: new Date().toISOString() })
+    .eq('id', id)
   if (error) throw error
 }
 

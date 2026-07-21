@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listEmployees } from './api'
 import type { Employee } from '../../types/database'
+import { getEmployeeRegistrationDate, formatGregorianDate } from '../../lib/employeeRegistrationDate'
 
 type DayGroup = {
   dateKey: string
@@ -9,27 +10,43 @@ type DayGroup = {
   employees: Employee[]
 }
 
+/** A readable Gregorian day heading, e.g. "الثلاثاء، 21 يوليو 2026". */
+function formatRegistrationDisplayDate(date: Date): string {
+  return formatGregorianDate(date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+}
+
 /**
- * Groups employees by the calendar day they were registered on (created_at),
- * preserving the newest-first order listEmployees() already returns them in
- * — so both the day groups themselves and the employees within each group
- * come out most-recent-first without any extra sorting.
+ * Groups employees by the calendar day of their effective registration
+ * date (getEmployeeRegistrationDate — created_at, unless the employee was
+ * later reactivated, in which case it's the reactivation date), most
+ * recent day first, with each day's own employees also most-recent-first.
+ * Sorted explicitly rather than relying on the input array's order, since
+ * a reactivated employee's effective date can be newer than their
+ * original position in a created_at-ordered list.
  */
 function groupByRegistrationDay(employees: Employee[]): DayGroup[] {
   const groups = new Map<string, DayGroup>()
 
   for (const employee of employees) {
-    const date = new Date(employee.created_at)
-    const dateKey = date.toLocaleDateString('en-CA') // YYYY-MM-DD, a stable grouping key
+    const registrationDate = new Date(getEmployeeRegistrationDate(employee))
+    const dateKey = registrationDate.toLocaleDateString('en-CA') // YYYY-MM-DD, a stable grouping key
     let group = groups.get(dateKey)
     if (!group) {
-      group = { dateKey, displayDate: date.toLocaleDateString('ar-SA'), employees: [] }
+      group = { dateKey, displayDate: formatRegistrationDisplayDate(registrationDate), employees: [] }
       groups.set(dateKey, group)
     }
     group.employees.push(employee)
   }
 
-  return Array.from(groups.values())
+  const sortedGroups = Array.from(groups.values()).sort((a, b) => b.dateKey.localeCompare(a.dateKey))
+  for (const group of sortedGroups) {
+    group.employees.sort(
+      (a, b) =>
+        new Date(getEmployeeRegistrationDate(b)).getTime() -
+        new Date(getEmployeeRegistrationDate(a)).getTime(),
+    )
+  }
+  return sortedGroups
 }
 
 function EmployeeRegistrationReportPage() {
@@ -54,6 +71,7 @@ function EmployeeRegistrationReportPage() {
   if (!employees) return <p className="text-text-secondary">جارٍ التحميل...</p>
 
   const groups = groupByRegistrationDay(employees)
+  const totalEmployees = employees.length
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -78,12 +96,25 @@ function EmployeeRegistrationReportPage() {
 
       {groups.length === 0 && <p className="text-text-secondary">لا يوجد موظفون مسجّلون بعد</p>}
 
+      {groups.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-3 rounded-field border border-divider bg-surface-muted p-4">
+          <div className="flex-1 min-w-[8rem]">
+            <p className="text-xs font-bold text-text-secondary">إجمالي الموظفين</p>
+            <p className="text-lg font-bold text-heading">{totalEmployees}</p>
+          </div>
+          <div className="flex-1 min-w-[8rem]">
+            <p className="text-xs font-bold text-text-secondary">عدد أيام التسجيل</p>
+            <p className="text-lg font-bold text-heading">{groups.length}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-8">
         {groups.map((group) => (
-          <section key={group.dateKey} className="rounded-field border border-divider p-4">
-            <div className="mb-4 flex items-center justify-between border-b border-divider pb-3">
+          <section key={group.dateKey} className="overflow-hidden rounded-field border border-divider">
+            <div className="flex items-center justify-between bg-surface-muted px-4 py-3">
               <p className="font-bold text-heading">{group.displayDate}</p>
-              <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-bold text-text-secondary">
+              <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-text-secondary">
                 العدد الإجمالي: {group.employees.length}
               </span>
             </div>
@@ -91,22 +122,25 @@ function EmployeeRegistrationReportPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-right text-sm">
                 <thead>
-                  <tr className="text-text-secondary">
-                    <th className="px-2 py-2 font-bold">#</th>
-                    <th className="px-2 py-2 font-bold">الاسم</th>
-                    <th className="px-2 py-2 font-bold">رقم الهوية</th>
-                    <th className="px-2 py-2 font-bold">الجنسية</th>
+                  <tr className="border-b border-divider text-text-secondary">
+                    <th className="px-4 py-2 font-bold">#</th>
+                    <th className="px-4 py-2 font-bold">الاسم</th>
+                    <th className="px-4 py-2 font-bold">رقم الهوية</th>
+                    <th className="px-4 py-2 font-bold">الجنسية</th>
                   </tr>
                 </thead>
                 <tbody>
                   {group.employees.map((employee, index) => (
-                    <tr key={employee.id} className="border-t border-divider">
-                      <td className="px-2 py-2 text-text-secondary">{index + 1}</td>
-                      <td className="px-2 py-2 font-bold text-heading">{employee.employee_name}</td>
-                      <td dir="ltr" className="px-2 py-2 text-right text-text-secondary">
+                    <tr
+                      key={employee.id}
+                      className={index % 2 === 1 ? 'bg-surface-muted/50' : undefined}
+                    >
+                      <td className="px-4 py-2 text-text-secondary">{index + 1}</td>
+                      <td className="px-4 py-2 font-bold text-heading">{employee.employee_name}</td>
+                      <td dir="ltr" className="px-4 py-2 text-right text-text-secondary">
                         {employee.identity_number}
                       </td>
-                      <td className="px-2 py-2 text-text-secondary">{employee.nationality}</td>
+                      <td className="px-4 py-2 text-text-secondary">{employee.nationality}</td>
                     </tr>
                   ))}
                 </tbody>

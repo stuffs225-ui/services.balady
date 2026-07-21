@@ -121,12 +121,20 @@ function EmployeeListPage() {
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-heading">الموظفون</h1>
-        <Link
-          to="/employees/new"
-          className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover"
-        >
-          إضافة موظف جديد
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            to="/employees/report"
+            className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+          >
+            تقرير التسجيل اليومي
+          </Link>
+          <Link
+            to="/employees/new"
+            className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover"
+          >
+            إضافة موظف جديد
+          </Link>
+        </div>
       </div>
 
       {stats && (

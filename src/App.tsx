@@ -9,6 +9,7 @@ import NewEmployeePage from './features/employees/NewEmployeePage'
 import EditEmployeePage from './features/employees/EditEmployeePage'
 import EmployeeDetailsPage from './features/employees/EmployeeDetailsPage'
 import EmployeeCardOverridesPage from './features/employees/EmployeeCardOverridesPage'
+import EmployeeRegistrationReportPage from './features/employees/EmployeeRegistrationReportPage'
 import PrintEmployeePage from './features/employees/PrintEmployeePage'
 import PublicEmployeePage from './features/public/PublicEmployeePage'
 import SettingsPage from './features/settings/SettingsPage'
@@ -30,6 +31,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="/employees" element={<EmployeeListPage />} />
+            <Route path="/employees/report" element={<EmployeeRegistrationReportPage />} />
             <Route path="/employees/new" element={<NewEmployeePage />} />
             <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
             <Route path="/employees/:id" element={<EmployeeDetailsPage />} />

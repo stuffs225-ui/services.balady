@@ -34,6 +34,7 @@ function makeEmployee(overrides: Partial<Employee>): Employee {
     employee_photo_crop: null,
     employee_card_overrides: null,
     visit_count: 0,
+    reactivated_at: null,
     is_active: true,
     created_at: '2026-01-01T12:00:00Z',
     updated_at: '2026-01-01T12:00:00Z',
@@ -93,18 +94,18 @@ describe('EmployeeRegistrationReportPage', () => {
     expect(secondSection.getByText('موظف يوم أول')).toBeInTheDocument()
   })
 
-  it('numbers employees within a day starting at 1, in # / name / identity number / nationality column order', async () => {
+  it('numbers employees within a day starting at 1 with the most recently registered first, in # / name / identity number / nationality column order', async () => {
     mockListEmployees.mockResolvedValue([
       makeEmployee({
         id: 'emp-1',
-        employee_name: 'الموظف الأول',
+        employee_name: 'الموظف الأبكر',
         identity_number: '1111111111',
         nationality: 'جنسية أ',
         created_at: '2026-07-21T09:00:00Z',
       }),
       makeEmployee({
         id: 'emp-2',
-        employee_name: 'الموظف الثاني',
+        employee_name: 'الموظف الأحدث',
         identity_number: '2222222222',
         nationality: 'جنسية ب',
         created_at: '2026-07-21T15:00:00Z',
@@ -121,15 +122,54 @@ describe('EmployeeRegistrationReportPage', () => {
     const firstRowCells = within(rows[0]).getAllByRole('cell')
     expect(firstRowCells.map((cell) => cell.textContent)).toEqual([
       '1',
-      'الموظف الأول',
+      'الموظف الأحدث',
+      '2222222222',
+      'جنسية ب',
+    ])
+
+    const secondRowCells = within(rows[1]).getAllByRole('cell')
+    expect(secondRowCells.map((cell) => cell.textContent)).toEqual([
+      '2',
+      'الموظف الأبكر',
       '1111111111',
       'جنسية أ',
     ])
 
-    const secondRowCells = within(rows[1]).getAllByRole('cell')
-    expect(secondRowCells[0].textContent).toBe('2')
-
     expect(screen.getByText('العدد الإجمالي: 2')).toBeInTheDocument()
+  })
+
+  it('groups a reactivated employee under their reactivation day, not their original signup day', async () => {
+    mockListEmployees.mockResolvedValue([
+      makeEmployee({
+        id: 'emp-reactivated',
+        employee_name: 'موظف أعيد تفعيله',
+        identity_number: '3333333333',
+        nationality: 'جنسية ج',
+        created_at: '2026-01-01T12:00:00Z', // original signup, long before reactivation
+        reactivated_at: '2026-07-21T12:00:00Z',
+      }),
+      makeEmployee({
+        id: 'emp-old',
+        employee_name: 'موظف قديم غير معاد تفعيله',
+        identity_number: '4444444444',
+        created_at: '2026-01-01T12:00:00Z',
+        reactivated_at: null,
+      }),
+    ])
+
+    renderPage()
+
+    // The reactivated employee shows up under 2026-07-21 (the reactivation
+    // date), in its own day group, separate from the other employee who
+    // still shows up under their original 2026-01-01 signup date.
+    const reactivatedHeading = await screen.findByText('موظف أعيد تفعيله')
+    const reactivatedSection = reactivatedHeading.closest('section')!
+    expect(within(reactivatedSection).getByText('العدد الإجمالي: 1')).toBeInTheDocument()
+    expect(within(reactivatedSection).queryByText('موظف قديم غير معاد تفعيله')).not.toBeInTheDocument()
+
+    const oldEmployeeHeading = screen.getByText('موظف قديم غير معاد تفعيله')
+    const oldSection = oldEmployeeHeading.closest('section')!
+    expect(oldSection).not.toBe(reactivatedSection)
   })
 
   it('shows a message when there are no registered employees yet', async () => {

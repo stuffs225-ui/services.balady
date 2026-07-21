@@ -31,11 +31,22 @@ export type Employee = {
    * public RPC's own return type.
    */
   visit_count: number
+  /**
+   * Set whenever an employee is reactivated after being deactivated — the
+   * employees list/reports treat this as the employee's "registration
+   * date" instead of created_at once it's set, so a reactivated employee
+   * is counted on the day they came back, not their original signup day.
+   * Null for an employee that's never been deactivated and reactivated.
+   */
+  reactivated_at: string | null
   created_at: string
   updated_at: string
 }
 
-export type EmployeeInsert = Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'visit_count'>
+export type EmployeeInsert = Omit<
+  Employee,
+  'id' | 'created_at' | 'updated_at' | 'visit_count' | 'reactivated_at'
+>
 
 export type EmployeeUpdate = Partial<
   Omit<Employee, 'id' | 'public_token' | 'created_at' | 'updated_at' | 'visit_count'>

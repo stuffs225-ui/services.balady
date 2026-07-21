@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listEmployees } from './api'
 import type { Employee } from '../../types/database'
+import { getEmployeeRegistrationDate } from '../../lib/employeeRegistrationDate'
 
 type DayGroup = {
   dateKey: string
@@ -10,26 +11,37 @@ type DayGroup = {
 }
 
 /**
- * Groups employees by the calendar day they were registered on (created_at),
- * preserving the newest-first order listEmployees() already returns them in
- * — so both the day groups themselves and the employees within each group
- * come out most-recent-first without any extra sorting.
+ * Groups employees by the calendar day of their effective registration
+ * date (getEmployeeRegistrationDate — created_at, unless the employee was
+ * later reactivated, in which case it's the reactivation date), most
+ * recent day first, with each day's own employees also most-recent-first.
+ * Sorted explicitly rather than relying on the input array's order, since
+ * a reactivated employee's effective date can be newer than their
+ * original position in a created_at-ordered list.
  */
 function groupByRegistrationDay(employees: Employee[]): DayGroup[] {
   const groups = new Map<string, DayGroup>()
 
   for (const employee of employees) {
-    const date = new Date(employee.created_at)
-    const dateKey = date.toLocaleDateString('en-CA') // YYYY-MM-DD, a stable grouping key
+    const registrationDate = new Date(getEmployeeRegistrationDate(employee))
+    const dateKey = registrationDate.toLocaleDateString('en-CA') // YYYY-MM-DD, a stable grouping key
     let group = groups.get(dateKey)
     if (!group) {
-      group = { dateKey, displayDate: date.toLocaleDateString('ar-SA'), employees: [] }
+      group = { dateKey, displayDate: registrationDate.toLocaleDateString('ar-SA'), employees: [] }
       groups.set(dateKey, group)
     }
     group.employees.push(employee)
   }
 
-  return Array.from(groups.values())
+  const sortedGroups = Array.from(groups.values()).sort((a, b) => b.dateKey.localeCompare(a.dateKey))
+  for (const group of sortedGroups) {
+    group.employees.sort(
+      (a, b) =>
+        new Date(getEmployeeRegistrationDate(b)).getTime() -
+        new Date(getEmployeeRegistrationDate(a)).getTime(),
+    )
+  }
+  return sortedGroups
 }
 
 function EmployeeRegistrationReportPage() {

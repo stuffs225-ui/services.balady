@@ -50,6 +50,7 @@ const FAKE_EMPLOYEE: Employee = {
   employee_photo_crop: null,
   employee_card_overrides: null,
   visit_count: 0,
+  reactivated_at: null,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
@@ -188,5 +189,20 @@ describe('EmployeeListPage deactivate/reactivate', () => {
     expect(await screen.findByRole('button', { name: 'إلغاء التفعيل' })).toBeInTheDocument()
 
     vi.unstubAllGlobals()
+  })
+
+  it('shows the reactivation date instead of the original signup date once an employee has been reactivated', async () => {
+    mockListEmployees.mockResolvedValue([
+      { ...FAKE_EMPLOYEE, created_at: '2026-01-01T00:00:00Z', reactivated_at: '2026-07-21T00:00:00Z' },
+    ])
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    const expectedText = new Date('2026-07-21T00:00:00Z').toLocaleDateString('ar-SA')
+    const unexpectedText = new Date('2026-01-01T00:00:00Z').toLocaleDateString('ar-SA')
+    expect(screen.getByText(expectedText)).toBeInTheDocument()
+    if (expectedText !== unexpectedText) {
+      expect(screen.queryByText(unexpectedText)).not.toBeInTheDocument()
+    }
   })
 })

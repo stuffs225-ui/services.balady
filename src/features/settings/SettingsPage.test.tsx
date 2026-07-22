@@ -178,6 +178,51 @@ describe('SettingsPage', () => {
     expect(payload.primary_action_href).toBe('https://example.test/account')
   })
 
+  it('seeds the visit alert thresholds with the defaults when none are saved yet', async () => {
+    renderSettingsPage()
+    await screen.findByDisplayValue('عن النظام')
+
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument() // rapid threshold
+    expect(screen.getByDisplayValue('15')).toBeInTheDocument() // rapid window minutes
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument() // daily threshold
+  })
+
+  it('lets the admin edit and save the visit alert thresholds', async () => {
+    renderSettingsPage()
+    await screen.findByDisplayValue('عن النظام')
+
+    fireEvent.change(screen.getByDisplayValue('3'), { target: { value: '4' } })
+    fireEvent.change(screen.getByDisplayValue('15'), { target: { value: '30' } })
+    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '8' } })
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ الإعدادات' }))
+
+    await waitFor(() => expect(mockUpdateSiteSettings).toHaveBeenCalledTimes(1))
+    const payload = mockUpdateSiteSettings.mock.calls[0][0]
+    expect(payload.visit_alert_rapid_threshold).toBe(4)
+    expect(payload.visit_alert_rapid_window_minutes).toBe(30)
+    expect(payload.visit_alert_daily_threshold).toBe(8)
+  })
+
+  it('loads previously saved visit alert thresholds instead of the defaults', async () => {
+    mockGetSiteSettings.mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      logo_path: null,
+      nav_links: [],
+      footer_links: [],
+      footer_badges: [],
+      visit_alert_rapid_threshold: 2,
+      visit_alert_rapid_window_minutes: 10,
+      visit_alert_daily_threshold: 20,
+      updated_at: '2026-01-01T00:00:00Z',
+    })
+
+    renderSettingsPage()
+
+    expect(await screen.findByDisplayValue('2')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('10')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('20')).toBeInTheDocument()
+  })
+
   it('loads and saves the logo link URL', async () => {
     mockGetSiteSettings.mockResolvedValue({
       id: '00000000-0000-0000-0000-000000000001',

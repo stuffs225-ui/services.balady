@@ -173,6 +173,11 @@ export type SiteSettings = {
   employee_card_layout: Partial<EmployeeCardLayout> | null
   primary_action_label: string
   primary_action_href: string
+  /** More than this many scans for one employee within visit_alert_rapid_window_minutes triggers a "rapid scan" alert. */
+  visit_alert_rapid_threshold: number
+  visit_alert_rapid_window_minutes: number
+  /** More than this many scans for one employee in a single day triggers a "high daily count" alert. */
+  visit_alert_daily_threshold: number
   updated_at: string
 }
 
@@ -197,6 +202,9 @@ export type SiteSettingsUpdate = Partial<
     | 'employee_card_layout'
     | 'primary_action_label'
     | 'primary_action_href'
+    | 'visit_alert_rapid_threshold'
+    | 'visit_alert_rapid_window_minutes'
+    | 'visit_alert_daily_threshold'
   >
 >
 

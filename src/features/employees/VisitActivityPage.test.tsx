@@ -6,10 +6,15 @@ import type { EmployeeVisitSummary } from './api'
 
 const mockListVisitEventsSince = vi.fn()
 const mockGetEmployeeVisitSummaries = vi.fn()
+const mockGetSiteSettings = vi.fn()
 
 vi.mock('./api', () => ({
   listVisitEventsSince: (...args: unknown[]) => mockListVisitEventsSince(...args),
   getEmployeeVisitSummaries: (...args: unknown[]) => mockGetEmployeeVisitSummaries(...args),
+}))
+
+vi.mock('../settings/api', () => ({
+  getSiteSettings: (...args: unknown[]) => mockGetSiteSettings(...args),
 }))
 
 function makeSummary(overrides: Partial<EmployeeVisitSummary>): EmployeeVisitSummary {
@@ -35,6 +40,7 @@ function renderPage() {
 describe('VisitActivityPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetSiteSettings.mockResolvedValue(null)
   })
 
   it('shows the empty state for both sections when there are no visits today', async () => {
@@ -67,7 +73,7 @@ describe('VisitActivityPage', () => {
     expect(within(quietRow).getByText('1 زيارة')).toBeInTheDocument()
   })
 
-  it('shows an alert row with the employee, reason, and detail for a rapid-scan burst', async () => {
+  it('shows an alert row with the employee, reason, and detail for a rapid-scan burst, using the default thresholds', async () => {
     const base = new Date('2026-07-22T10:00:00.000Z').getTime()
     mockListVisitEventsSince.mockResolvedValue(
       [0, 1, 2, 3].map((i) => ({
@@ -86,7 +92,7 @@ describe('VisitActivityPage', () => {
     expect(table.getByText('موظف مشبوه')).toBeInTheDocument()
     expect(table.getByText('9999999999')).toBeInTheDocument()
     expect(table.getByText('مسح متكرر خلال وقت قصير')).toBeInTheDocument()
-    expect(table.getByText('4 مسحات خلال ربع ساعة')).toBeInTheDocument()
+    expect(table.getByText('4 مسحات خلال 15 دقيقة')).toBeInTheDocument()
   })
 
   it('shows an alert row for an employee with more than 5 visits today', async () => {
@@ -103,6 +109,32 @@ describe('VisitActivityPage', () => {
 
     expect(await screen.findByText('عدد زيارات مرتفع اليوم')).toBeInTheDocument()
     expect(screen.getByText('6 زيارات اليوم')).toBeInTheDocument()
+  })
+
+  it('uses the admin-configured thresholds from site settings instead of the defaults', async () => {
+    const baseMs = new Date('2026-07-22T10:00:00.000Z').getTime()
+    mockListVisitEventsSince.mockResolvedValue(
+      [0, 1].map((i) => ({
+        id: String(i),
+        employee_id: 'emp-1',
+        visited_at: new Date(baseMs + i * 60_000).toISOString(),
+      })),
+    )
+    mockGetEmployeeVisitSummaries.mockResolvedValue([
+      makeSummary({ id: 'emp-1', employee_name: 'موظف' }),
+    ])
+    mockGetSiteSettings.mockResolvedValue({
+      visit_alert_rapid_threshold: 1,
+      visit_alert_rapid_window_minutes: 5,
+      visit_alert_daily_threshold: 10,
+    })
+
+    renderPage()
+
+    expect(await screen.findByText('2 مسحات خلال 5 دقيقة')).toBeInTheDocument()
+    expect(
+      screen.getByText('أكثر من 1 مسحات خلال 5 دقيقة، أو أكثر من 10 مسحات في اليوم', { exact: false }),
+    ).toBeInTheDocument()
   })
 
   it('shows an error message when loading fails', async () => {

@@ -1,11 +1,23 @@
 import type { EmployeeVisitEvent } from '../types/database'
 
-const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
+/** Fallback thresholds, used until an admin sets their own values in Settings. */
+export const DEFAULT_RAPID_VISIT_THRESHOLD = 3
+export const DEFAULT_RAPID_VISIT_WINDOW_MINUTES = 15
+export const DEFAULT_DAILY_VISIT_THRESHOLD = 5
 
-/** More than this many visits in a day is flagged as unusual. */
-export const DAILY_VISIT_ALERT_THRESHOLD = 5
-/** More than this many visits within any 15-minute window is flagged as unusual. */
-export const RAPID_VISIT_ALERT_THRESHOLD = 3
+export type VisitAlertThresholds = {
+  /** More than this many visits within rapidVisitWindowMinutes triggers a "rapid scan" alert. */
+  rapidVisitThreshold: number
+  rapidVisitWindowMinutes: number
+  /** More than this many visits in a day triggers a "high daily count" alert. */
+  dailyVisitThreshold: number
+}
+
+export const DEFAULT_VISIT_ALERT_THRESHOLDS: VisitAlertThresholds = {
+  rapidVisitThreshold: DEFAULT_RAPID_VISIT_THRESHOLD,
+  rapidVisitWindowMinutes: DEFAULT_RAPID_VISIT_WINDOW_MINUTES,
+  dailyVisitThreshold: DEFAULT_DAILY_VISIT_THRESHOLD,
+}
 
 export type EmployeeActivity = {
   employeeId: string
@@ -32,14 +44,14 @@ export function groupVisitsByEmployee(events: EmployeeVisitEvent[]): EmployeeAct
 }
 
 /**
- * The largest number of visits that fall within any 15-minute span, via a
+ * The largest number of visits that fall within any span of windowMs, via a
  * sliding window over the (already sorted) timestamps.
  */
-export function maxVisitsInFifteenMinutes(sortedTimestamps: number[]): number {
+export function maxVisitsInWindow(sortedTimestamps: number[], windowMs: number): number {
   let windowStart = 0
   let maxCount = 0
   for (let i = 0; i < sortedTimestamps.length; i++) {
-    while (sortedTimestamps[i] - sortedTimestamps[windowStart] > FIFTEEN_MINUTES_MS) {
+    while (sortedTimestamps[i] - sortedTimestamps[windowStart] > windowMs) {
       windowStart++
     }
     maxCount = Math.max(maxCount, i - windowStart + 1)
@@ -70,23 +82,29 @@ export type VisitAlert = {
 /**
  * Flags employees whose activity today looks abnormal: an unusually high
  * total, or a burst of scans packed into a short window (which a daily
- * total alone wouldn't catch if the rest of the day was quiet).
+ * total alone wouldn't catch if the rest of the day was quiet). Thresholds
+ * are admin-configurable (Settings → إعدادات تنبيهات الزيارات), falling
+ * back to DEFAULT_VISIT_ALERT_THRESHOLDS.
  */
-export function buildVisitAlerts(activities: EmployeeActivity[]): VisitAlert[] {
+export function buildVisitAlerts(
+  activities: EmployeeActivity[],
+  thresholds: VisitAlertThresholds = DEFAULT_VISIT_ALERT_THRESHOLDS,
+): VisitAlert[] {
   const alerts: VisitAlert[] = []
+  const windowMs = thresholds.rapidVisitWindowMinutes * 60_000
 
   for (const { employeeId, timestamps } of activities) {
-    const burst = maxVisitsInFifteenMinutes(timestamps)
-    if (burst > RAPID_VISIT_ALERT_THRESHOLD) {
+    const burst = maxVisitsInWindow(timestamps, windowMs)
+    if (burst > thresholds.rapidVisitThreshold) {
       alerts.push({
         employeeId,
         reason: 'مسح متكرر خلال وقت قصير',
-        detail: `${burst} مسحات خلال ربع ساعة`,
+        detail: `${burst} مسحات خلال ${thresholds.rapidVisitWindowMinutes} دقيقة`,
         priority: 2,
       })
     }
 
-    if (timestamps.length > DAILY_VISIT_ALERT_THRESHOLD) {
+    if (timestamps.length > thresholds.dailyVisitThreshold) {
       alerts.push({
         employeeId,
         reason: 'عدد زيارات مرتفع اليوم',

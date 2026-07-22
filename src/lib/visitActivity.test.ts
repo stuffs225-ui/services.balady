@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   groupVisitsByEmployee,
-  maxVisitsInFifteenMinutes,
+  maxVisitsInWindow,
   buildLeaderboard,
   buildVisitAlerts,
 } from './visitActivity'
@@ -29,21 +29,23 @@ describe('groupVisitsByEmployee', () => {
   })
 })
 
-describe('maxVisitsInFifteenMinutes', () => {
+describe('maxVisitsInWindow', () => {
+  const FIFTEEN_MINUTES_MS = 15 * 60_000
+
   it('returns 0 for no timestamps', () => {
-    expect(maxVisitsInFifteenMinutes([])).toBe(0)
+    expect(maxVisitsInWindow([], FIFTEEN_MINUTES_MS)).toBe(0)
   })
 
-  it('counts a burst of visits packed within 15 minutes', () => {
+  it('counts a burst of visits packed within the window', () => {
     const base = new Date('2026-07-22T10:00:00Z').getTime()
     const timestamps = [base, base + 5 * 60_000, base + 10 * 60_000, base + 14 * 60_000]
-    expect(maxVisitsInFifteenMinutes(timestamps)).toBe(4)
+    expect(maxVisitsInWindow(timestamps, FIFTEEN_MINUTES_MS)).toBe(4)
   })
 
-  it('does not count visits spread more than 15 minutes apart as one burst', () => {
+  it('does not count visits spread wider than the window as one burst', () => {
     const base = new Date('2026-07-22T10:00:00Z').getTime()
     const timestamps = [base, base + 20 * 60_000, base + 40 * 60_000]
-    expect(maxVisitsInFifteenMinutes(timestamps)).toBe(1)
+    expect(maxVisitsInWindow(timestamps, FIFTEEN_MINUTES_MS)).toBe(1)
   })
 })
 
@@ -63,7 +65,7 @@ describe('buildLeaderboard', () => {
 })
 
 describe('buildVisitAlerts', () => {
-  it('flags an employee with more than 5 visits today', () => {
+  it('flags an employee with more than 5 visits today, using the default thresholds', () => {
     const events: EmployeeVisitEvent[] = []
     for (let i = 0; i < 6; i++) {
       events.push(makeEvent('emp-1', `2026-07-22T0${i}:00:00Z`))
@@ -86,7 +88,7 @@ describe('buildVisitAlerts', () => {
     expect(buildVisitAlerts(groupVisitsByEmployee(events))).toHaveLength(0)
   })
 
-  it('flags an employee with more than 3 visits within 15 minutes', () => {
+  it('flags an employee with more than 3 visits within 15 minutes, using the default thresholds', () => {
     const base = '2026-07-22T10:00:00.000Z'
     const baseMs = new Date(base).getTime()
     const events = [0, 1, 2, 3].map((i) => makeEvent('emp-1', new Date(baseMs + i * 60_000).toISOString()))
@@ -96,7 +98,7 @@ describe('buildVisitAlerts', () => {
     expect(alerts[0]).toMatchObject({
       employeeId: 'emp-1',
       reason: 'مسح متكرر خلال وقت قصير',
-      detail: '4 مسحات خلال ربع ساعة',
+      detail: '4 مسحات خلال 15 دقيقة',
     })
   })
 
@@ -126,5 +128,22 @@ describe('buildVisitAlerts', () => {
       makeEvent('emp-1', '2026-07-22T13:00:00Z'),
     ]
     expect(buildVisitAlerts(groupVisitsByEmployee(events))).toHaveLength(0)
+  })
+
+  it('respects admin-configured thresholds instead of the defaults', () => {
+    const baseMs = new Date('2026-07-22T10:00:00.000Z').getTime()
+    const events = [0, 1].map((i) => makeEvent('emp-1', new Date(baseMs + i * 60_000).toISOString()))
+
+    // With the default thresholds, 2 visits within a couple of minutes raises nothing.
+    expect(buildVisitAlerts(groupVisitsByEmployee(events))).toHaveLength(0)
+
+    // A stricter admin-configured threshold (more than 1 within 5 minutes) flags it.
+    const alerts = buildVisitAlerts(groupVisitsByEmployee(events), {
+      rapidVisitThreshold: 1,
+      rapidVisitWindowMinutes: 5,
+      dailyVisitThreshold: 5,
+    })
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0].detail).toBe('2 مسحات خلال 5 دقيقة')
   })
 })

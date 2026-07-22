@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listVisitEventsSince, getEmployeeVisitSummaries, type EmployeeVisitSummary } from './api'
+import { getSiteSettings } from '../settings/api'
 import { startOfTodayIso } from '../../lib/dates'
 import {
   groupVisitsByEmployee,
   buildLeaderboard,
   buildVisitAlerts,
+  DEFAULT_VISIT_ALERT_THRESHOLDS,
   type VisitAlert,
+  type VisitAlertThresholds,
 } from '../../lib/visitActivity'
 
 const TOP_LEADERBOARD_SIZE = 5
@@ -15,6 +18,7 @@ type ViewState = {
   leaderboard: { employee: EmployeeVisitSummary; visitCount: number }[]
   alerts: { employee: EmployeeVisitSummary; alert: VisitAlert }[]
   totalVisitsToday: number
+  thresholds: VisitAlertThresholds
 }
 
 function severityClasses(priority: number): string {
@@ -32,7 +36,20 @@ function VisitActivityPage() {
 
     async function load() {
       try {
-        const events = await listVisitEventsSince(startOfTodayIso())
+        const [events, settings] = await Promise.all([
+          listVisitEventsSince(startOfTodayIso()),
+          getSiteSettings(),
+        ])
+        const thresholds: VisitAlertThresholds = {
+          rapidVisitThreshold:
+            settings?.visit_alert_rapid_threshold ?? DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitThreshold,
+          rapidVisitWindowMinutes:
+            settings?.visit_alert_rapid_window_minutes ??
+            DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitWindowMinutes,
+          dailyVisitThreshold:
+            settings?.visit_alert_daily_threshold ?? DEFAULT_VISIT_ALERT_THRESHOLDS.dailyVisitThreshold,
+        }
+
         const activities = groupVisitsByEmployee(events)
         const employeeIds = Array.from(new Set(events.map((event) => event.employee_id)))
         const summaries = await getEmployeeVisitSummaries(employeeIds)
@@ -45,13 +62,13 @@ function VisitActivityPage() {
             return employee ? [{ employee, visitCount: entry.visitCount }] : []
           })
 
-        const alerts = buildVisitAlerts(activities).flatMap((alert) => {
+        const alerts = buildVisitAlerts(activities, thresholds).flatMap((alert) => {
           const employee = summaryById.get(alert.employeeId)
           return employee ? [{ employee, alert }] : []
         })
 
         if (!cancelled) {
-          setView({ leaderboard, alerts, totalVisitsToday: events.length })
+          setView({ leaderboard, alerts, totalVisitsToday: events.length, thresholds })
         }
       } catch {
         if (!cancelled) setLoadError('تعذر تحميل نشاط الزيارات، يرجى تحديث الصفحة')
@@ -113,7 +130,16 @@ function VisitActivityPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-bold text-heading">التنبيهات</h2>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-bold text-heading">التنبيهات</h2>
+              <p className="text-xs text-text-secondary">
+                أكثر من {view.thresholds.rapidVisitThreshold} مسحات خلال {view.thresholds.rapidVisitWindowMinutes} دقيقة،
+                أو أكثر من {view.thresholds.dailyVisitThreshold} مسحات في اليوم ·{' '}
+                <Link to="/settings" className="font-bold text-brand-primary hover:underline">
+                  تعديل الحدود من الإعدادات
+                </Link>
+              </p>
+            </div>
             {view.alerts.length === 0 ? (
               <p className="rounded-field border border-divider p-4 text-text-secondary">
                 لا توجد تنبيهات — نشاط الزيارات اليوم طبيعي

@@ -10,6 +10,7 @@ import {
   siteIdentity,
   primaryActionLink as defaultPrimaryActionLink,
 } from '../../config/siteLinks'
+import { DEFAULT_VISIT_ALERT_THRESHOLDS } from '../../lib/visitActivity'
 import type { NavLinkSetting, NavMenuSection, FooterBadgeSetting } from '../../types/database'
 
 type BadgeDraft = {
@@ -80,6 +81,15 @@ function SettingsPage() {
   const [footerBadgeSize, setFooterBadgeSize] = useState(56)
   const [primaryActionLabel, setPrimaryActionLabel] = useState('')
   const [primaryActionHref, setPrimaryActionHref] = useState('')
+  const [rapidVisitThreshold, setRapidVisitThreshold] = useState(
+    DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitThreshold,
+  )
+  const [rapidVisitWindowMinutes, setRapidVisitWindowMinutes] = useState(
+    DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitWindowMinutes,
+  )
+  const [dailyVisitThreshold, setDailyVisitThreshold] = useState(
+    DEFAULT_VISIT_ALERT_THRESHOLDS.dailyVisitThreshold,
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -106,6 +116,16 @@ function SettingsPage() {
         setFooterBadgeSize(settings?.footer_badge_size || 56)
         setPrimaryActionLabel(settings?.primary_action_label || defaultPrimaryActionLink.label)
         setPrimaryActionHref(settings?.primary_action_href || defaultPrimaryActionLink.href)
+        setRapidVisitThreshold(
+          settings?.visit_alert_rapid_threshold ?? DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitThreshold,
+        )
+        setRapidVisitWindowMinutes(
+          settings?.visit_alert_rapid_window_minutes ??
+            DEFAULT_VISIT_ALERT_THRESHOLDS.rapidVisitWindowMinutes,
+        )
+        setDailyVisitThreshold(
+          settings?.visit_alert_daily_threshold ?? DEFAULT_VISIT_ALERT_THRESHOLDS.dailyVisitThreshold,
+        )
       } catch {
         if (!cancelled) {
           setMessage({ kind: 'error', text: 'تعذر تحميل الإعدادات، يرجى تحديث الصفحة' })
@@ -238,6 +258,9 @@ function SettingsPage() {
         footer_badge_size: footerBadgeSize,
         primary_action_label: primaryActionLabel,
         primary_action_href: primaryActionHref,
+        visit_alert_rapid_threshold: rapidVisitThreshold,
+        visit_alert_rapid_window_minutes: rapidVisitWindowMinutes,
+        visit_alert_daily_threshold: dailyVisitThreshold,
       })
 
       setMessage({ kind: 'success', text: 'تم حفظ الإعدادات بنجاح' })
@@ -422,6 +445,54 @@ function SettingsPage() {
             dir="ltr"
             className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
           />
+        </div>
+      </section>
+
+      <section className="mb-8 border-b border-divider pb-8">
+        <h2 className="mb-4 font-bold text-heading">إعدادات تنبيهات الزيارات</h2>
+        <p className="mb-4 text-sm text-text-secondary">
+          تُستخدم هذه الحدود في صفحة "متابعة زيارات اليوم" لتنبيه المسؤول عند رصد نمط مسح غير معتاد.
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-sm font-bold text-text-primary">
+              حد المسح المتكرر (عدد المسحات)
+            </label>
+            <input
+              type="number"
+              min={1}
+              dir="ltr"
+              value={rapidVisitThreshold}
+              onChange={(event) => setRapidVisitThreshold(Math.max(1, Number(event.target.value) || 1))}
+              className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold text-text-primary">خلال كم دقيقة</label>
+            <input
+              type="number"
+              min={1}
+              dir="ltr"
+              value={rapidVisitWindowMinutes}
+              onChange={(event) =>
+                setRapidVisitWindowMinutes(Math.max(1, Number(event.target.value) || 1))
+              }
+              className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold text-text-primary">
+              حد عدد المسحات في اليوم
+            </label>
+            <input
+              type="number"
+              min={1}
+              dir="ltr"
+              value={dailyVisitThreshold}
+              onChange={(event) => setDailyVisitThreshold(Math.max(1, Number(event.target.value) || 1))}
+              className="w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+            />
+          </div>
         </div>
       </section>
 

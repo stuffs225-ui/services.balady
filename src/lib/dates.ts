@@ -46,6 +46,12 @@ export function todayDateOnly(): string {
   return `${year}-${month}-${day}`
 }
 
+/** Local midnight for today, as an ISO timestamp — a query lower bound for "since the start of today". */
+export function startOfTodayIso(): string {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+}
+
 export function addDaysISO(iso: string, days: number): string {
   const date = parseISODate(iso)
   if (!date) return ''

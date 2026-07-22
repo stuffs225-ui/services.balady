@@ -7,6 +7,7 @@ import type {
   EmployeeInsert,
   EmployeeUpdate,
   EmployeeCardOverrides,
+  EmployeeVisitEvent,
 } from '../../types/database'
 import type { EmployeeFormValues } from '../../lib/employeeSchema'
 
@@ -81,6 +82,37 @@ export async function getEmployeeStats(): Promise<EmployeeStats> {
   const averageVisitsLast3Days = totalEmployees > 0 ? (recentVisitCount ?? 0) / totalEmployees : 0
 
   return { totalEmployees, totalVisits, averageVisitsLast3Days }
+}
+
+/**
+ * Every visit event since the given point in time (typically the start of
+ * today), oldest first — the raw material for the visit activity page's
+ * leaderboard and rapid-scan/high-count alerts.
+ */
+export async function listVisitEventsSince(sinceIso: string): Promise<EmployeeVisitEvent[]> {
+  const { data, error } = await supabase
+    .from('employee_visit_events')
+    .select('id, employee_id, visited_at')
+    .gte('visited_at', sinceIso)
+    .order('visited_at', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export type EmployeeVisitSummary = Pick<
+  Employee,
+  'id' | 'employee_name' | 'identity_number' | 'nationality' | 'profession' | 'certificate_number'
+>
+
+/** Lightweight employee summaries for the visit activity page — just enough to identify who an alert is about. */
+export async function getEmployeeVisitSummaries(ids: string[]): Promise<EmployeeVisitSummary[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from('employees')
+    .select('id, employee_name, identity_number, nationality, profession, certificate_number')
+    .in('id', ids)
+  if (error) throw error
+  return data ?? []
 }
 
 function photoPathForToken(token: string): string {

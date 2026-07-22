@@ -124,6 +124,12 @@ function EmployeeListPage() {
         <h1 className="text-xl font-bold text-heading">الموظفون</h1>
         <div className="flex gap-3">
           <Link
+            to="/employees/visits"
+            className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+          >
+            متابعة زيارات اليوم
+          </Link>
+          <Link
             to="/employees/report"
             className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
           >

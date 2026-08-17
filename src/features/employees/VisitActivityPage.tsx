@@ -2,23 +2,36 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listVisitEventsSince, getEmployeeVisitSummaries, type EmployeeVisitSummary } from './api'
 import { getSiteSettings } from '../settings/api'
-import { startOfTodayIso } from '../../lib/dates'
+import { startOfDaysAgoIso } from '../../lib/dates'
+import { formatGregorianDate } from '../../lib/employeeRegistrationDate'
 import {
   groupVisitsByEmployee,
   buildLeaderboard,
-  buildVisitAlerts,
+  buildVisitAlertsLog,
   DEFAULT_VISIT_ALERT_THRESHOLDS,
-  type VisitAlert,
+  type DailyVisitAlert,
   type VisitAlertThresholds,
 } from '../../lib/visitActivity'
 
 const TOP_LEADERBOARD_SIZE = 5
+/** How far back the alerts log looks — a bounded window keeps the query and table from growing forever. */
+const ALERTS_LOG_WINDOW_DAYS = 30
+
+type LoggedAlert = { displayDate: string; employee: EmployeeVisitSummary; alert: DailyVisitAlert }
 
 type ViewState = {
   leaderboard: { employee: EmployeeVisitSummary; visitCount: number }[]
-  alerts: { employee: EmployeeVisitSummary; alert: VisitAlert }[]
-  totalVisitsToday: number
+  alertsLog: LoggedAlert[]
   thresholds: VisitAlertThresholds
+}
+
+/** "YYYY-MM-DD" day key → a short readable date, e.g. "22/07/2026". */
+function displayDateForDayKey(dateKey: string): string {
+  return formatGregorianDate(new Date(`${dateKey}T12:00:00`), {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
 }
 
 function severityClasses(priority: number): string {
@@ -37,7 +50,7 @@ function VisitActivityPage() {
     async function load() {
       try {
         const [events, settings] = await Promise.all([
-          listVisitEventsSince(startOfTodayIso()),
+          listVisitEventsSince(startOfDaysAgoIso(ALERTS_LOG_WINDOW_DAYS)),
           getSiteSettings(),
         ])
         const thresholds: VisitAlertThresholds = {
@@ -50,25 +63,32 @@ function VisitActivityPage() {
             settings?.visit_alert_daily_threshold ?? DEFAULT_VISIT_ALERT_THRESHOLDS.dailyVisitThreshold,
         }
 
-        const activities = groupVisitsByEmployee(events)
         const employeeIds = Array.from(new Set(events.map((event) => event.employee_id)))
         const summaries = await getEmployeeVisitSummaries(employeeIds)
         const summaryById = new Map(summaries.map((summary) => [summary.id, summary]))
 
-        const leaderboard = buildLeaderboard(activities)
+        // The leaderboard only ever looks at today, regardless of how far
+        // back the alerts log below reaches.
+        const todayKey = new Date().toLocaleDateString('en-CA')
+        const todaysEvents = events.filter(
+          (event) => new Date(event.visited_at).toLocaleDateString('en-CA') === todayKey,
+        )
+        const leaderboard = buildLeaderboard(groupVisitsByEmployee(todaysEvents))
           .slice(0, TOP_LEADERBOARD_SIZE)
           .flatMap((entry) => {
             const employee = summaryById.get(entry.employeeId)
             return employee ? [{ employee, visitCount: entry.visitCount }] : []
           })
 
-        const alerts = buildVisitAlerts(activities, thresholds).flatMap((alert) => {
+        const alertsLog = buildVisitAlertsLog(events, thresholds).flatMap((alert) => {
           const employee = summaryById.get(alert.employeeId)
-          return employee ? [{ employee, alert }] : []
+          return employee
+            ? [{ employee, alert, displayDate: displayDateForDayKey(alert.dateKey) }]
+            : []
         })
 
         if (!cancelled) {
-          setView({ leaderboard, alerts, totalVisitsToday: events.length, thresholds })
+          setView({ leaderboard, alertsLog, thresholds })
         }
       } catch {
         if (!cancelled) setLoadError('تعذر تحميل نشاط الزيارات، يرجى تحديث الصفحة')
@@ -131,24 +151,25 @@ function VisitActivityPage() {
 
           <section>
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-bold text-heading">التنبيهات</h2>
+              <h2 className="font-bold text-heading">سجل التنبيهات (آخر {ALERTS_LOG_WINDOW_DAYS} يومًا)</h2>
               <p className="text-xs text-text-secondary">
                 أكثر من {view.thresholds.rapidVisitThreshold} مسحات خلال {view.thresholds.rapidVisitWindowMinutes} دقيقة،
-                أو أكثر من {view.thresholds.dailyVisitThreshold} مسحات في اليوم ·{' '}
+                أو أكثر من {view.thresholds.dailyVisitThreshold} مسحات في نفس اليوم ·{' '}
                 <Link to="/settings" className="font-bold text-brand-primary hover:underline">
                   تعديل الحدود من الإعدادات
                 </Link>
               </p>
             </div>
-            {view.alerts.length === 0 ? (
+            {view.alertsLog.length === 0 ? (
               <p className="rounded-field border border-divider p-4 text-text-secondary">
-                لا توجد تنبيهات — نشاط الزيارات اليوم طبيعي
+                لا توجد تنبيهات مسجّلة خلال هذه الفترة
               </p>
             ) : (
               <div className="overflow-x-auto rounded-field border border-divider">
                 <table className="w-full text-right text-sm">
                   <thead>
                     <tr className="border-b border-divider bg-surface-muted text-text-secondary">
+                      <th className="px-4 py-2 font-bold">التاريخ</th>
                       <th className="px-4 py-2 font-bold">الموظف</th>
                       <th className="px-4 py-2 font-bold">رقم الهوية</th>
                       <th className="px-4 py-2 font-bold">سبب التنبيه</th>
@@ -156,8 +177,11 @@ function VisitActivityPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {view.alerts.map(({ employee, alert }, index) => (
-                      <tr key={`${employee.id}-${index}`} className="border-t border-divider">
+                    {view.alertsLog.map(({ employee, alert, displayDate }, index) => (
+                      <tr key={`${employee.id}-${alert.dateKey}-${index}`} className="border-t border-divider">
+                        <td dir="ltr" className="px-4 py-2 text-right text-text-secondary">
+                          {displayDate}
+                        </td>
                         <td className="px-4 py-2 font-bold text-heading">{employee.employee_name}</td>
                         <td dir="ltr" className="px-4 py-2 text-right text-text-secondary">
                           {employee.identity_number}

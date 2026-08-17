@@ -116,3 +116,40 @@ export function buildVisitAlerts(
 
   return alerts.sort((a, b) => b.priority - a.priority)
 }
+
+export type DailyVisitAlert = VisitAlert & {
+  /** Calendar day the alert applies to, as a stable "YYYY-MM-DD" key (local time). */
+  dateKey: string
+}
+
+/**
+ * Same alert logic as buildVisitAlerts, but evaluated separately per
+ * calendar day across every event given (not just "today") — a log the
+ * admin can look back through, instead of one that only ever shows what's
+ * happening right now. Nothing is persisted anywhere: a day's entry is
+ * simply recomputed from that day's actual events every time this runs, so
+ * if more visits land on today's date before the next reload, today's
+ * entry reflects the new total automatically.
+ */
+export function buildVisitAlertsLog(
+  events: EmployeeVisitEvent[],
+  thresholds: VisitAlertThresholds = DEFAULT_VISIT_ALERT_THRESHOLDS,
+): DailyVisitAlert[] {
+  const eventsByDay = new Map<string, EmployeeVisitEvent[]>()
+  for (const event of events) {
+    const dateKey = new Date(event.visited_at).toLocaleDateString('en-CA') // YYYY-MM-DD, a stable grouping key
+    const existing = eventsByDay.get(dateKey)
+    if (existing) existing.push(event)
+    else eventsByDay.set(dateKey, [event])
+  }
+
+  const log: DailyVisitAlert[] = []
+  for (const [dateKey, dayEvents] of eventsByDay) {
+    const activities = groupVisitsByEmployee(dayEvents)
+    for (const alert of buildVisitAlerts(activities, thresholds)) {
+      log.push({ ...alert, dateKey })
+    }
+  }
+
+  return log.sort((a, b) => b.dateKey.localeCompare(a.dateKey) || b.priority - a.priority)
+}

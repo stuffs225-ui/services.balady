@@ -5,12 +5,30 @@ import {
   displayDateOnly,
   gregorianToHijri,
   normalizeDateOnly,
+  startOfDaysAgoIso,
+  startOfTodayIso,
   todayDateOnly,
 } from './dates'
 
 describe('todayDateOnly', () => {
   it('returns an ISO date string (YYYY-MM-DD)', () => {
     expect(todayDateOnly()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('startOfDaysAgoIso / startOfTodayIso', () => {
+  it('startOfTodayIso matches startOfDaysAgoIso(0)', () => {
+    // Both compute "now" independently, so compare by the minute rather
+    // than asserting exact equality (avoids flaking on a clock tick between
+    // the two calls).
+    expect(startOfTodayIso().slice(0, 16)).toBe(startOfDaysAgoIso(0).slice(0, 16))
+  })
+
+  it('goes back the requested number of calendar days', () => {
+    const today = new Date(startOfTodayIso())
+    const tenDaysAgo = new Date(startOfDaysAgoIso(10))
+    const diffDays = Math.round((today.getTime() - tenDaysAgo.getTime()) / (24 * 60 * 60 * 1000))
+    expect(diffDays).toBe(10)
   })
 })
 

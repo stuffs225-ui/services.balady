@@ -48,8 +48,13 @@ export function todayDateOnly(): string {
 
 /** Local midnight for today, as an ISO timestamp — a query lower bound for "since the start of today". */
 export function startOfTodayIso(): string {
+  return startOfDaysAgoIso(0)
+}
+
+/** Local midnight `daysAgo` days back, as an ISO timestamp — a query lower bound for "since N days ago". */
+export function startOfDaysAgoIso(daysAgo: number): string {
   const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo).toISOString()
 }
 
 export function addDaysISO(iso: string, days: number): string {

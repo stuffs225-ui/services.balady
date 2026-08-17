@@ -4,6 +4,7 @@ import {
   maxVisitsInWindow,
   buildLeaderboard,
   buildVisitAlerts,
+  buildVisitAlertsLog,
 } from './visitActivity'
 import type { EmployeeVisitEvent } from '../types/database'
 
@@ -145,5 +146,66 @@ describe('buildVisitAlerts', () => {
     })
     expect(alerts).toHaveLength(1)
     expect(alerts[0].detail).toBe('2 مسحات خلال 5 دقيقة')
+  })
+})
+
+describe('buildVisitAlertsLog', () => {
+  it('tags each alert with the calendar day it happened on', () => {
+    const events: EmployeeVisitEvent[] = []
+    for (let i = 0; i < 6; i++) {
+      events.push(makeEvent('emp-1', `2026-07-20T0${i}:00:00Z`))
+    }
+
+    const log = buildVisitAlertsLog(events)
+
+    expect(log).toHaveLength(1)
+    expect(log[0]).toMatchObject({ dateKey: '2026-07-20', reason: 'عدد زيارات مرتفع اليوم' })
+  })
+
+  it('keeps separate days as separate entries, most recent day first', () => {
+    const olderDayEvents: EmployeeVisitEvent[] = []
+    for (let i = 0; i < 6; i++) {
+      olderDayEvents.push(makeEvent('emp-1', `2026-07-18T0${i}:00:00Z`))
+    }
+    const newerDayEvents: EmployeeVisitEvent[] = []
+    for (let i = 0; i < 6; i++) {
+      newerDayEvents.push(makeEvent('emp-1', `2026-07-20T0${i}:00:00Z`))
+    }
+
+    const log = buildVisitAlertsLog([...olderDayEvents, ...newerDayEvents])
+
+    expect(log).toHaveLength(2)
+    expect(log[0].dateKey).toBe('2026-07-20')
+    expect(log[1].dateKey).toBe('2026-07-18')
+  })
+
+  it('recomputes a day\'s count from that day\'s full activity, so it grows as more visits land', () => {
+    const sixVisits: EmployeeVisitEvent[] = []
+    for (let i = 0; i < 6; i++) {
+      sixVisits.push(makeEvent('emp-1', `2026-07-20T0${i}:00:00Z`))
+    }
+    expect(buildVisitAlertsLog(sixVisits)[0].detail).toBe('6 زيارات اليوم')
+
+    const eightVisits = [
+      ...sixVisits,
+      makeEvent('emp-1', '2026-07-20T06:00:00Z'),
+      makeEvent('emp-1', '2026-07-20T07:00:00Z'),
+    ]
+    expect(buildVisitAlertsLog(eightVisits)[0].detail).toBe('8 زيارات اليوم')
+  })
+
+  it('does not cross-contaminate a burst that straddles midnight into two separate days', () => {
+    // 23:50 one day and 00:05 the next — 15 minutes apart in real time, but
+    // on two different calendar days, so this must not raise a rapid-scan
+    // alert (each day only sees its own single visit).
+    const events = [
+      makeEvent('emp-1', '2026-07-19T23:50:00Z'),
+      makeEvent('emp-1', '2026-07-20T00:05:00Z'),
+    ]
+    expect(buildVisitAlertsLog(events)).toHaveLength(0)
+  })
+
+  it('returns an empty log for no events', () => {
+    expect(buildVisitAlertsLog([])).toHaveLength(0)
   })
 })

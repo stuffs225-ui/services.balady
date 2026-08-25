@@ -159,7 +159,7 @@ export async function exportEmployeeCardPdfFast({
  * file with no intermediate viewer page. Falls back to the classic
  * blob-URL anchor download otherwise.
  */
-async function savePdfDirectly(pdf: jsPDF, fileName: string): Promise<void> {
+export async function savePdfDirectly(pdf: jsPDF, fileName: string): Promise<void> {
   const blob = pdf.output('blob') as Blob
 
   if (typeof navigator.canShare === 'function' && typeof navigator.share === 'function') {

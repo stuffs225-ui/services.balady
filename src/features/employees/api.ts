@@ -243,6 +243,25 @@ export async function reactivateEmployee(id: string): Promise<void> {
 }
 
 /**
+ * Sets whether an employee still owes payment, plus an optional private
+ * note — visible only to the admin (on this employee's own details page,
+ * as a badge on the employees list, and in the unpaid-employees report),
+ * never through the public certificate page. The note is always cleared
+ * when marking an employee as paid, since it only ever describes the
+ * current unpaid situation.
+ */
+export async function updateEmployeeUnpaidStatus(
+  id: string,
+  { isUnpaid, note }: { isUnpaid: boolean; note: string | null },
+): Promise<void> {
+  const { error } = await supabase
+    .from('employees')
+    .update({ is_unpaid: isUnpaid, unpaid_note: isUnpaid ? note : null })
+    .eq('id', id)
+  if (error) throw error
+}
+
+/**
  * Permanently erases the employee's record — unlike deactivateEmployee,
  * this cannot be undone: the row is gone, and it never appears in the
  * platform or via the public verify_certificate() RPC again.

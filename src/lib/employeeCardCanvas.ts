@@ -130,7 +130,7 @@ export async function renderEmployeeCardToCanvas(
  * taint the canvas or hit a CORS restriction, regardless of how the
  * remote server is configured.
  */
-async function loadImageViaBlob(url: string): Promise<HTMLImageElement | null> {
+export async function loadImageViaBlob(url: string): Promise<HTMLImageElement | null> {
   let objectUrl: string | null = null
   try {
     const response = await fetch(url)

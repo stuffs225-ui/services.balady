@@ -6,6 +6,7 @@ import {
   deactivateEmployee,
   reactivateEmployee,
   deleteEmployee,
+  updateEmployeeUnpaidStatus,
 } from './api'
 import type { Employee } from '../../types/database'
 import { getEmployeePublicUrl } from '../../lib/publicUrl'
@@ -50,6 +51,11 @@ function EmployeeDetailsPage() {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle')
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [unpaidDraft, setUnpaidDraft] = useState(false)
+  const [unpaidNoteDraft, setUnpaidNoteDraft] = useState('')
+  const [isSavingUnpaid, setIsSavingUnpaid] = useState(false)
+  const [unpaidSaveMessage, setUnpaidSaveMessage] = useState<string | null>(null)
 
   const successMessage = (location.state as { created?: boolean; updated?: boolean } | null)
     ?.created
@@ -70,6 +76,8 @@ function EmployeeDetailsPage() {
           return
         }
         setEmployee(data)
+        setUnpaidDraft(data.is_unpaid)
+        setUnpaidNoteDraft(data.unpaid_note ?? '')
 
         const publicUrl = getEmployeePublicUrl(data.public_token)
         const [photo, qr] = await Promise.all([
@@ -103,15 +111,25 @@ function EmployeeDetailsPage() {
   async function handleDeactivate() {
     if (!employee) return
     if (!confirm('هل أنت متأكد من إلغاء تفعيل هذا الموظف؟')) return
-    await deactivateEmployee(employee.id)
-    navigate('/employees')
+    setActionError(null)
+    try {
+      await deactivateEmployee(employee.id)
+      navigate('/employees')
+    } catch {
+      setActionError('تعذر إلغاء تفعيل الموظف، يرجى المحاولة مرة أخرى')
+    }
   }
 
   async function handleReactivate() {
     if (!employee) return
     if (!confirm('هل أنت متأكد من إعادة تفعيل هذا الموظف؟')) return
-    await reactivateEmployee(employee.id)
-    setEmployee((prev) => (prev ? { ...prev, is_active: true } : prev))
+    setActionError(null)
+    try {
+      await reactivateEmployee(employee.id)
+      setEmployee((prev) => (prev ? { ...prev, is_active: true } : prev))
+    } catch {
+      setActionError('تعذر إعادة تفعيل الموظف، يرجى المحاولة مرة أخرى')
+    }
   }
 
   async function handleDelete() {
@@ -123,8 +141,31 @@ function EmployeeDetailsPage() {
     ) {
       return
     }
-    await deleteEmployee(employee.id, employee.employee_photo_path)
-    navigate('/employees')
+    setActionError(null)
+    try {
+      await deleteEmployee(employee.id, employee.employee_photo_path)
+      navigate('/employees')
+    } catch {
+      setActionError('تعذر حذف الموظف، يرجى المحاولة مرة أخرى')
+    }
+  }
+
+  async function handleSaveUnpaidStatus() {
+    if (!employee) return
+    setUnpaidSaveMessage(null)
+    setActionError(null)
+    setIsSavingUnpaid(true)
+    try {
+      const note = unpaidDraft ? unpaidNoteDraft.trim() || null : null
+      await updateEmployeeUnpaidStatus(employee.id, { isUnpaid: unpaidDraft, note })
+      setEmployee((prev) => (prev ? { ...prev, is_unpaid: unpaidDraft, unpaid_note: note } : prev))
+      setUnpaidNoteDraft(note ?? '')
+      setUnpaidSaveMessage('تم حفظ حالة الدفع')
+    } catch {
+      setActionError('تعذر حفظ حالة الدفع، يرجى المحاولة مرة أخرى')
+    } finally {
+      setIsSavingUnpaid(false)
+    }
   }
 
   if (isLoading) return <p className="text-text-secondary">جارٍ التحميل...</p>
@@ -141,12 +182,22 @@ function EmployeeDetailsPage() {
           {successMessage}
         </p>
       )}
+      {actionError && (
+        <p className="mb-4 rounded-field bg-red-50 px-4 py-3 text-sm font-bold text-expired">{actionError}</p>
+      )}
 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold text-heading">تفاصيل الموظف</h1>
-        <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-bold text-text-secondary">
-          {CERTIFICATE_STATUS_LABELS[status]}
-        </span>
+        <div className="flex gap-2">
+          {employee.is_unpaid && (
+            <span className="rounded-full bg-expired/10 px-3 py-1 text-sm font-bold text-expired">
+              لم يدفع
+            </span>
+          )}
+          <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-bold text-text-secondary">
+            {CERTIFICATE_STATUS_LABELS[status]}
+          </span>
+        </div>
       </div>
 
       <div className="mb-8 flex flex-col items-center gap-4 border-b border-divider pb-8 sm:flex-row sm:items-start">
@@ -230,6 +281,43 @@ function EmployeeDetailsPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="mb-8 rounded-field border border-divider p-6">
+        <p className="mb-1 font-bold text-heading">حالة الدفع</p>
+        <p className="mb-4 text-sm text-text-secondary">
+          مرئية للمشرف فقط — لا تظهر في الصفحة العامة للموظف أو لأي شخص آخر.
+        </p>
+        <label className="mb-3 flex items-center gap-2 text-sm font-bold text-text-primary">
+          <input
+            type="checkbox"
+            checked={unpaidDraft}
+            onChange={(event) => setUnpaidDraft(event.target.checked)}
+          />
+          لم يدفع
+        </label>
+        {unpaidDraft && (
+          <textarea
+            value={unpaidNoteDraft}
+            onChange={(event) => setUnpaidNoteDraft(event.target.value)}
+            placeholder="ملاحظة (اختياري)"
+            rows={3}
+            className="mb-3 w-full rounded-field border border-input-border bg-input-bg px-3 py-2 text-sm"
+          />
+        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveUnpaidStatus}
+            disabled={isSavingUnpaid}
+            className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover disabled:opacity-60"
+          >
+            {isSavingUnpaid ? 'جارٍ الحفظ...' : 'حفظ حالة الدفع'}
+          </button>
+          {unpaidSaveMessage && (
+            <span className="text-sm font-bold text-brand-primary">{unpaidSaveMessage}</span>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col items-center gap-4 rounded-field border border-divider p-6 sm:flex-row sm:justify-between">

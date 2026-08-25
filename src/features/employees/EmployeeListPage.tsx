@@ -7,6 +7,7 @@ import {
   deleteEmployee,
   getEmployeePhotoUrl,
   getEmployeeStats,
+  updateEmployeeUnpaidStatus,
   type EmployeeStats,
 } from './api'
 import type { Employee } from '../../types/database'
@@ -24,6 +25,7 @@ function EmployeeListPage() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [stats, setStats] = useState<EmployeeStats | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // Independent of the search box/filter — always reflects every employee.
   useEffect(() => {
@@ -87,18 +89,60 @@ function EmployeeListPage() {
 
   async function handleDeactivate(id: string) {
     if (!confirm('هل أنت متأكد من إلغاء تفعيل هذا الموظف؟')) return
-    await deactivateEmployee(id)
-    setEmployees((prev) =>
-      prev.map((employee) => (employee.id === id ? { ...employee, is_active: false } : employee)),
-    )
+    setActionError(null)
+    try {
+      await deactivateEmployee(id)
+      setEmployees((prev) =>
+        prev.map((employee) => (employee.id === id ? { ...employee, is_active: false } : employee)),
+      )
+    } catch {
+      setActionError('تعذر إلغاء تفعيل الموظف، يرجى المحاولة مرة أخرى')
+    }
   }
 
   async function handleReactivate(id: string) {
     if (!confirm('هل أنت متأكد من إعادة تفعيل هذا الموظف؟')) return
-    await reactivateEmployee(id)
-    setEmployees((prev) =>
-      prev.map((employee) => (employee.id === id ? { ...employee, is_active: true } : employee)),
-    )
+    setActionError(null)
+    try {
+      await reactivateEmployee(id)
+      setEmployees((prev) =>
+        prev.map((employee) => (employee.id === id ? { ...employee, is_active: true } : employee)),
+      )
+    } catch {
+      setActionError('تعذر إعادة تفعيل الموظف، يرجى المحاولة مرة أخرى')
+    }
+  }
+
+  async function handleMarkUnpaid(id: string) {
+    const note = window.prompt('ملاحظة (اختياري):', '')
+    if (note === null) return
+    setActionError(null)
+    try {
+      const trimmed = note.trim() || null
+      await updateEmployeeUnpaidStatus(id, { isUnpaid: true, note: trimmed })
+      setEmployees((prev) =>
+        prev.map((employee) =>
+          employee.id === id ? { ...employee, is_unpaid: true, unpaid_note: trimmed } : employee,
+        ),
+      )
+    } catch {
+      setActionError('تعذر تحديث حالة الدفع، يرجى المحاولة مرة أخرى')
+    }
+  }
+
+  async function handleMarkPaid(id: string) {
+    if (!confirm('هل أنت متأكد من تحديد هذا الموظف كمدفوع؟')) return
+    setActionError(null)
+    try {
+      await updateEmployeeUnpaidStatus(id, { isUnpaid: false, note: null })
+      setEmployees((prev) =>
+        prev.map((employee) =>
+          employee.id === id ? { ...employee, is_unpaid: false, unpaid_note: null } : employee,
+        ),
+      )
+    } catch {
+      setActionError('تعذر تحديث حالة الدفع، يرجى المحاولة مرة أخرى')
+    }
   }
 
   async function handleDelete(employee: Employee) {
@@ -136,6 +180,12 @@ function EmployeeListPage() {
             تقرير التسجيل اليومي
           </Link>
           <Link
+            to="/employees/unpaid-report"
+            className="rounded-button border border-divider px-4 py-2 text-sm font-bold hover:bg-surface-muted"
+          >
+            تقرير غير المدفوعين
+          </Link>
+          <Link
             to="/employees/new"
             className="rounded-button bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover"
           >
@@ -143,6 +193,10 @@ function EmployeeListPage() {
           </Link>
         </div>
       </div>
+
+      {actionError && (
+        <p className="mb-6 rounded-field bg-red-50 px-4 py-3 text-sm font-bold text-expired">{actionError}</p>
+      )}
 
       {stats && (
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -209,6 +263,11 @@ function EmployeeListPage() {
                     <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-bold text-text-secondary">
                       {CERTIFICATE_STATUS_LABELS[certStatus]}
                     </span>
+                    {employee.is_unpaid && (
+                      <span className="rounded-full bg-expired/10 px-2 py-0.5 text-xs font-bold text-expired">
+                        لم يدفع
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-text-secondary">
                     {employee.certificate_number} · {employee.profession} · {employee.establishment_name}
@@ -274,6 +333,23 @@ function EmployeeListPage() {
                       className="rounded-button border border-brand-primary px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary-soft/10"
                     >
                       إعادة تفعيل
+                    </button>
+                  )}
+                  {employee.is_unpaid ? (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkPaid(employee.id)}
+                      className="rounded-button border border-brand-primary px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary-soft/10"
+                    >
+                      تحديد كمدفوع
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkUnpaid(employee.id)}
+                      className="rounded-button border border-expired px-3 py-1.5 text-xs font-bold text-expired hover:bg-red-50"
+                    >
+                      تحديد كغير مدفوع
                     </button>
                   )}
                   <button

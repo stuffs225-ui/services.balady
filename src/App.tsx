@@ -10,6 +10,7 @@ import EditEmployeePage from './features/employees/EditEmployeePage'
 import EmployeeDetailsPage from './features/employees/EmployeeDetailsPage'
 import EmployeeCardOverridesPage from './features/employees/EmployeeCardOverridesPage'
 import EmployeeRegistrationReportPage from './features/employees/EmployeeRegistrationReportPage'
+import UnpaidEmployeesReportPage from './features/employees/UnpaidEmployeesReportPage'
 import VisitActivityPage from './features/employees/VisitActivityPage'
 import PrintEmployeePage from './features/employees/PrintEmployeePage'
 import PublicEmployeePage from './features/public/PublicEmployeePage'
@@ -33,6 +34,7 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/employees" element={<EmployeeListPage />} />
             <Route path="/employees/report" element={<EmployeeRegistrationReportPage />} />
+            <Route path="/employees/unpaid-report" element={<UnpaidEmployeesReportPage />} />
             <Route path="/employees/visits" element={<VisitActivityPage />} />
             <Route path="/employees/new" element={<NewEmployeePage />} />
             <Route path="/employees/:id/edit" element={<EditEmployeePage />} />

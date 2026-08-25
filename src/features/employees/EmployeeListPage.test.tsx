@@ -11,6 +11,7 @@ const mockReactivateEmployee = vi.fn()
 const mockDeleteEmployee = vi.fn()
 const mockGetEmployeePhotoUrl = vi.fn()
 const mockGetEmployeeStats = vi.fn()
+const mockUpdateEmployeeUnpaidStatus = vi.fn()
 
 vi.mock('./api', () => ({
   listEmployees: (...args: unknown[]) => mockListEmployees(...args),
@@ -19,6 +20,7 @@ vi.mock('./api', () => ({
   deleteEmployee: (...args: unknown[]) => mockDeleteEmployee(...args),
   getEmployeePhotoUrl: (...args: unknown[]) => mockGetEmployeePhotoUrl(...args),
   getEmployeeStats: (...args: unknown[]) => mockGetEmployeeStats(...args),
+  updateEmployeeUnpaidStatus: (...args: unknown[]) => mockUpdateEmployeeUnpaidStatus(...args),
 }))
 
 vi.mock('../../lib/qrcode', () => ({
@@ -51,6 +53,8 @@ const FAKE_EMPLOYEE: Employee = {
   employee_card_overrides: null,
   visit_count: 0,
   reactivated_at: null,
+  is_unpaid: false,
+  unpaid_note: null,
   is_active: true,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
@@ -204,5 +208,106 @@ describe('EmployeeListPage deactivate/reactivate', () => {
     if (expectedText !== unexpectedText) {
       expect(screen.queryByText(unexpectedText)).not.toBeInTheDocument()
     }
+  })
+
+  it('shows an error message instead of failing silently when reactivation fails', async () => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    mockListEmployees.mockResolvedValue([{ ...FAKE_EMPLOYEE, is_active: false }])
+    mockReactivateEmployee.mockRejectedValue(new Error('column "reactivated_at" does not exist'))
+
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    await userEvent.click(screen.getByRole('button', { name: 'إعادة تفعيل' }))
+
+    expect(await screen.findByText('تعذر إعادة تفعيل الموظف، يرجى المحاولة مرة أخرى')).toBeInTheDocument()
+    // The button stays as "إعادة تفعيل" — the failed update never applied.
+    expect(screen.getByRole('button', { name: 'إعادة تفعيل' })).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('EmployeeListPage unpaid status', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetEmployeePhotoUrl.mockResolvedValue(null)
+    mockGetEmployeeStats.mockResolvedValue({
+      totalEmployees: 1,
+      totalVisits: 0,
+      averageVisitsLast3Days: 0,
+    })
+  })
+
+  it('does not show the "لم يدفع" badge for an employee who has paid', async () => {
+    mockListEmployees.mockResolvedValue([FAKE_EMPLOYEE])
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    expect(screen.queryByText('لم يدفع')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'تحديد كغير مدفوع' })).toBeInTheDocument()
+  })
+
+  it('shows the "لم يدفع" badge for an unpaid employee', async () => {
+    mockListEmployees.mockResolvedValue([{ ...FAKE_EMPLOYEE, is_unpaid: true, unpaid_note: 'ملاحظة' }])
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    expect(screen.getByText('لم يدفع')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'تحديد كمدفوع' })).toBeInTheDocument()
+  })
+
+  it('marks an employee as unpaid with the entered note, and shows the badge in place', async () => {
+    vi.stubGlobal('prompt', vi.fn().mockReturnValue('لم يدفع رسوم الشهادة'))
+    mockListEmployees.mockResolvedValue([FAKE_EMPLOYEE])
+    mockUpdateEmployeeUnpaidStatus.mockResolvedValue(undefined)
+
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    await userEvent.click(screen.getByRole('button', { name: 'تحديد كغير مدفوع' }))
+
+    await waitFor(() =>
+      expect(mockUpdateEmployeeUnpaidStatus).toHaveBeenCalledWith('emp-1', {
+        isUnpaid: true,
+        note: 'لم يدفع رسوم الشهادة',
+      }),
+    )
+    expect(await screen.findByText('لم يدفع')).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does nothing if the note prompt is cancelled', async () => {
+    vi.stubGlobal('prompt', vi.fn().mockReturnValue(null))
+    mockListEmployees.mockResolvedValue([FAKE_EMPLOYEE])
+
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    await userEvent.click(screen.getByRole('button', { name: 'تحديد كغير مدفوع' }))
+
+    expect(mockUpdateEmployeeUnpaidStatus).not.toHaveBeenCalled()
+    expect(screen.queryByText('لم يدفع')).not.toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('marks a previously-unpaid employee as paid, clearing the badge', async () => {
+    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
+    mockListEmployees.mockResolvedValue([{ ...FAKE_EMPLOYEE, is_unpaid: true, unpaid_note: 'ملاحظة' }])
+    mockUpdateEmployeeUnpaidStatus.mockResolvedValue(undefined)
+
+    renderPage()
+    await screen.findByText('موظف تجريبي')
+
+    await userEvent.click(screen.getByRole('button', { name: 'تحديد كمدفوع' }))
+
+    await waitFor(() =>
+      expect(mockUpdateEmployeeUnpaidStatus).toHaveBeenCalledWith('emp-1', { isUnpaid: false, note: null }),
+    )
+    expect(screen.queryByText('لم يدفع')).not.toBeInTheDocument()
+
+    vi.unstubAllGlobals()
   })
 })

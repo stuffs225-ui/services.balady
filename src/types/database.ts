@@ -39,13 +39,22 @@ export type Employee = {
    * Null for an employee that's never been deactivated and reactivated.
    */
   reactivated_at: string | null
+  /**
+   * Whether this employee still owes payment — admin-only, shown as a
+   * badge on the employees list and used to build the unpaid-employees
+   * report. Never selected by verify_certificate() or shown on the public
+   * certificate page.
+   */
+  is_unpaid: boolean
+  /** Optional free-text note about the unpaid status (e.g. why, how much) — cleared whenever is_unpaid is set back to false. */
+  unpaid_note: string | null
   created_at: string
   updated_at: string
 }
 
 export type EmployeeInsert = Omit<
   Employee,
-  'id' | 'created_at' | 'updated_at' | 'visit_count' | 'reactivated_at'
+  'id' | 'created_at' | 'updated_at' | 'visit_count' | 'reactivated_at' | 'is_unpaid' | 'unpaid_note'
 >
 
 export type EmployeeUpdate = Partial<
